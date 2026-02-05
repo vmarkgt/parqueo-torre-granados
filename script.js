@@ -1,4 +1,6 @@
+// ==========================================
 // CONFIGURACIÓN DE USUARIOS
+// ==========================================
 const usuariosSistemas = [
     {user: "admin", pass: "admin123", rol: "ADMIN"},
     {user: "usuario1", pass: "1111", rol: "OPERADOR"},
@@ -8,7 +10,9 @@ const usuariosSistemas = [
 
 let usuarioActivo = null;
 
-// CARGA DE DATOS
+// ==========================================
+// CARGA DE DATOS (LocalStorage)
+// ==========================================
 let activos = JSON.parse(localStorage.getItem("activos")) || [];
 activos = activos.map(v => ({
     ...v, 
@@ -17,16 +21,27 @@ activos = activos.map(v => ({
 }));
 let historial = JSON.parse(localStorage.getItem("historial")) || [];
 
-// RELOJ VIVO
+// ==========================================
+// RELOJ Y FECHA EN VIVO
+// ==========================================
 setInterval(() => {
     const relojCont = document.getElementById('reloj');
-    if(!relojCont) return;
+    const fechaCont = document.getElementById('fecha');
+    if(!relojCont || !fechaCont) return;
+    
     const ahora = new Date();
     relojCont.innerText = ahora.toLocaleTimeString();
-    document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    fechaCont.innerText = ahora.toLocaleDateString('es-ES', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
 }, 1000);
 
-// LOGIN
+// ==========================================
+// LÓGICA DE SESIÓN (LOGIN)
+// ==========================================
 function login(){
     let u = document.getElementById("loginUser").value;
     let p = document.getElementById("loginPass").value;
@@ -41,19 +56,31 @@ function login(){
     actualizarLista();
 }
 
-// REGISTRAR ENTRADA
+// ==========================================
+// GESTIÓN DE VEHÍCULOS
+// ==========================================
 function registrarEntrada(){
     let input = document.getElementById("plateInput");
     let placa = input.value.trim().toUpperCase();
     if(!placa) return;
-    activos.push({placa, horaEntrada: new Date(), user: usuarioActivo.user, sellos: 0});
+
+    let nuevoVehiculo = {
+        placa, 
+        horaEntrada: new Date(), 
+        user: usuarioActivo.user, 
+        sellos: 0
+    };
+
+    activos.push(nuevoVehiculo);
     localStorage.setItem("activos", JSON.stringify(activos));
-    imprimirTicketEntrada(activos[activos.length-1]);
+    
+    // Llamar a impresión directa
+    imprimirTicketEntrada(nuevoVehiculo);
+    
     input.value = "";
     actualizarLista();
 }
 
-// LÓGICA DE SELLO CON SALIDA AUTOMÁTICA
 function agregarSello(index){
     activos[index].sellos += 1;
     let v = activos[index];
@@ -69,7 +96,6 @@ function agregarSello(index){
     }
 }
 
-// DAR SALIDA
 function darSalida(index){
     let v = activos[index];
     let salida = new Date();
@@ -80,6 +106,7 @@ function darSalida(index){
     let inicial = v.placa[0];
     let precio = 0;
     if(minutosFinales > 0) {
+        // Lógica: Motos (M) Q3/Q6 - Carros Q5/Q10
         precio = (inicial === "M") ? (minutosFinales <= 30 ? 3 : 6) : (minutosFinales <= 30 ? 5 : 10);
     }
 
@@ -94,15 +121,14 @@ function darSalida(index){
     };
 
     historial.push(registro);
-    imprimirTicketSalida(registro);
-    activos.splice(index, 1);
+    imprimirTicketSalida(registro); // Impresión directa
     
+    activos.splice(index, 1);
     localStorage.setItem("activos", JSON.stringify(activos));
     localStorage.setItem("historial", JSON.stringify(historial));
     actualizarLista();
 }
 
-// ACTUALIZAR LISTA DE VEHICULOS
 function actualizarLista(){
     let cont = document.getElementById("activeList");
     cont.innerHTML = "";
@@ -121,94 +147,104 @@ function actualizarLista(){
     });
 }
 
-// BORRAR HISTORIAL (SÓLO ADMIN)
-function borrarHistorialDefinitivo(){
-    if(confirm("¿Seguro que deseas borrar TODO el historial definitivamente?")){
-        historial = [];
-        localStorage.setItem("historial", JSON.stringify(historial));
-        toggleHistorial(); 
-        alert("Historial borrado.");
-    }
-}
-
-// MOSTRAR/OCULTAR HISTORIAL
+// ==========================================
+// HISTORIAL Y REPORTES
+// ==========================================
 function toggleHistorial(){
     let box = document.getElementById("historialBox");
     if(box.style.display === "none") {
         box.style.display = "block";
-        
-        let htmlContenido = "";
-        if(historial.length > 0) {
-            let listaHTML = historial.slice().reverse().map(h => `
-                <div style="padding:10px; border-bottom:1px solid #eee; font-size:11px; text-align:left;">
-                    <b>${h.placa}</b> | Q${h.precio} | Sellos: ${h.sellos} | Op: ${h.operador}<br>
-                    <small>E: ${h.horaE} - S: ${h.horaS} (${h.fecha})</small>
-                </div>
-            `).join('');
-            
-            if(usuarioActivo.rol === "ADMIN") {
-                listaHTML += `<button class="ios-btn-danger" onclick="borrarHistorialDefinitivo()">BORRAR HISTORIAL DEFINITIVAMENTE</button>`;
-            }
-            htmlContenido = listaHTML;
-        } else {
-            htmlContenido = "<p style='padding:10px; font-size:12px; color:#888;'>Sin registros.</p>";
-        }
-        box.innerHTML = htmlContenido;
+        renderizarHistorial();
     } else {
         box.style.display = "none";
     }
 }
 
+function renderizarHistorial(){
+    let box = document.getElementById("historialBox");
+    if(historial.length > 0) {
+        let listaHTML = historial.slice().reverse().map(h => `
+            <div style="padding:10px; border-bottom:1px solid #eee; font-size:11px; text-align:left;">
+                <b>${h.placa}</b> | Q${h.precio} | Op: ${h.operador}<br>
+                <small>E: ${h.horaE} - S: ${h.horaS} (${h.fecha})</small>
+            </div>
+        `).join('');
+        
+        if(usuarioActivo.rol === "ADMIN") {
+            listaHTML += `<button class="ios-btn-danger" style="width:100%; margin-top:10px;" onclick="borrarHistorialDefinitivo()">BORRAR TODO EL HISTORIAL</button>`;
+        }
+        box.innerHTML = listaHTML;
+    } else {
+        box.innerHTML = "<p style='padding:10px; font-size:12px; color:#888;'>Sin registros.</p>";
+    }
+}
+
+function borrarHistorialDefinitivo(){
+    if(confirm("¿Seguro que deseas borrar TODO el historial definitivamente?")){
+        historial = [];
+        localStorage.setItem("historial", JSON.stringify(historial));
+        renderizarHistorial();
+        alert("Historial borrado.");
+    }
+}
+
 // ==========================================
-// IMPRESIÓN DIRECTA RAWBT (SIN VISTA PREVIA)
+// IMPRESIÓN DIRECTA RAWBT (OPTIMIZADA 58MM)
 // ==========================================
 
 function imprimirTicketEntrada(v){
-    let ticket = "";
-    ticket += "   PARQUEO TORRE GRANADOS   \n";
-    ticket += "----------------------------\n";
-    ticket += "     TICKET DE ENTRADA      \n";
-    ticket += "----------------------------\n";
-    ticket += "PLACA:    " + v.placa + "\n";
-    ticket += "FECHA:    " + v.horaEntrada.toLocaleDateString() + "\n";
-    ticket += "HORA:     " + v.horaEntrada.toLocaleTimeString() + "\n";
-    ticket += "----------------------------\n";
-    ticket += "   CONSERVE SU TICKET       \n";
-    ticket += " TICKET PERDIDO: Q100.00    \n";
-    ticket += "\n\n\n"; // Espacios para corte manual
+    let t = "";
+    t += "      TORRE GRANADOS      \n";
+    t += "==========================\n";
+    t += "    TICKET DE ENTRADA     \n";
+    t += "==========================\n\n";
+    t += "PLACA: " + v.placa + "\n";
+    t += "FECHA: " + v.horaEntrada.toLocaleDateString() + "\n";
+    t += "HORA:  " + v.horaEntrada.toLocaleTimeString() + "\n";
+    t += "--------------------------\n";
+    t += "  CONSERVE ESTE TICKET    \n";
+    t += " TICKET PERDIDO: Q100.00  \n";
+    t += "\n\n\n\n"; 
 
-    // Salto directo a RawBT
-    window.location.href = "rawbt:(txt)" + encodeURIComponent(ticket);
+    window.location.href = "rawbt:(txt)" + encodeURIComponent(t);
 }
 
 function imprimirTicketSalida(h){
-    let ticket = "";
-    ticket += "   PARQUEO TORRE GRANADOS   \n";
-    ticket += "----------------------------\n";
-    ticket += "      TICKET DE SALIDA      \n";
-    ticket += "----------------------------\n";
-    ticket += "PLACA:    " + h.placa + "\n";
-    ticket += "MONTO:    Q" + h.precio + ".00\n";
-    ticket += "----------------------------\n";
-    ticket += "ENTRADA:  " + h.horaE + "\n";
-    ticket += "SALIDA:   " + h.horaS + "\n";
-    ticket += "SELLOS:   " + h.sellos + "\n";
-    ticket += "OPERADOR: " + h.operador + "\n";
-    ticket += "----------------------------\n";
-    ticket += "   GRACIAS POR SU VISITA    \n";
-    ticket += "\n\n\n";
+    let t = "";
+    t += "      TORRE GRANADOS      \n";
+    t += "==========================\n";
+    t += "    COMPROBANTE PAGO      \n";
+    t += "==========================\n\n";
+    t += "PLACA:    " + h.placa + "\n";
+    t += "TOTAL:    Q" + h.precio + ".00\n";
+    t += "--------------------------\n";
+    t += "ENTRADA:  " + h.horaE + "\n";
+    t += "SALIDA:   " + h.horaS + "\n";
+    t += "SELLOS:   " + h.sellos + "\n";
+    t += "OPERADOR: " + h.operador + "\n";
+    t += "==========================\n";
+    t += "  GRACIAS POR SU VISITA   \n";
+    t += "\n\n\n\n";
 
-    window.location.href = "rawbt:(txt)" + encodeURIComponent(ticket);
+    window.location.href = "rawbt:(txt)" + encodeURIComponent(t);
 }
 
 function generarReporteHTML(){
-    let textoReporte = "REPORTE DE VENTAS - TORRE GRANADOS\n";
-    textoReporte += "================================\n";
+    if(historial.length === 0) return alert("No hay datos para el reporte");
+    
+    let total = historial.reduce((s, x) => s + x.precio, 0);
+    let t = "";
+    t += "    REPORTE DE VENTAS     \n";
+    t += "      TORRE GRANADOS      \n";
+    t += "==========================\n";
     historial.forEach(x => {
-        textoReporte += `${x.placa} | Q${x.precio} | Op: ${x.operador}\n`;
+        t += x.placa + " | Q" + x.precio + " | " + x.horaS + "\n";
     });
-    textoReporte += "================================\n";
-    textoReporte += "TOTAL: Q" + historial.reduce((s, x) => s + x.precio, 0) + ".00\n\n\n";
+    t += "--------------------------\n";
+    t += "GRAN TOTAL: Q" + total + ".00\n";
+    t += "FECHA: " + new Date().toLocaleDateString() + "\n";
+    t += "==========================\n";
+    t += "\n\n\n\n";
 
-    window.location.href = "rawbt:(txt)" + encodeURIComponent(textoReporte);
+    window.location.href = "rawbt:(txt)" + encodeURIComponent(t);
 }
