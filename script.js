@@ -162,113 +162,62 @@ function toggleHistorial(){
 }
 
 // ==========================================
-// IMPRESIÓN GIGANTE (MODO IMAGEN)
+// IMPRESIÓN COMPATIBLE (FORMATO RAWBT TXT)
 // ==========================================
 
 function imprimirTicketEntrada(v) {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 380; 
-    canvas.height = 420;
+    // Usamos etiquetas de RawBT que funcionan en casi todas las versiones
+    let t = "";
+    t += "[center][b]TORRE GRANADOS[/b]\n";
+    t += "--------------------------\n";
+    t += "[center]TICKET DE ENTRADA\n";
+    t += "--------------------------\n\n";
+    t += "[center]PLACA:\n";
+    t += "[center][h2]" + v.placa + "[/h2]\n\n";
+    t += "[left]FECHA: " + v.horaEntrada.toLocaleDateString() + "\n";
+    t += "[left]HORA:  " + v.horaEntrada.toLocaleTimeString() + "\n";
+    t += "--------------------------\n";
+    t += "[center]CONSERVE SU TICKET\n";
+    t += "[center][b]VALOR EXTRAVIADO: Q100[/b]\n";
+    t += "\n\n\n\n"; 
 
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "black";
-    ctx.textAlign = "center";
-
-    ctx.font = "bold 32px Arial";
-    ctx.fillText("TORRE GRANADOS", 190, 50);
-    ctx.font = "22px Arial";
-    ctx.fillText("TICKET DE ENTRADA", 190, 90);
-    ctx.fillText("---------------------------------", 190, 115);
-
-    // PLACA GIGANTE
-    ctx.font = "bold 90px Arial";
-    ctx.fillText(v.placa, 190, 210);
-
-    ctx.font = "22px Arial";
-    ctx.fillText("---------------------------------", 190, 250);
-    ctx.textAlign = "left";
-    ctx.fillText("FECHA: " + v.horaEntrada.toLocaleDateString(), 30, 290);
-    ctx.fillText("HORA:  " + v.horaEntrada.toLocaleTimeString(), 30, 330);
-    
-    ctx.textAlign = "center";
-    ctx.font = "bold 20px Arial";
-    ctx.fillText("CONSERVE SU TICKET", 190, 385);
-
-    const dataUrl = canvas.toDataURL("image/png");
-    window.location.href = "rawbt:(img)" + dataUrl;
+    // IMPORTANTE: Nota que quitamos el (txt) pegado
+    window.location.href = "rawbt: " + encodeURIComponent(t);
 }
 
 function imprimirTicketSalida(h) {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 380;
-    canvas.height = 480;
+    let t = "";
+    t += "[center][b]TORRE GRANADOS[/b]\n";
+    t += "--------------------------\n";
+    t += "[center]COMPROBANTE PAGO\n";
+    t += "--------------------------\n\n";
+    t += "[center][h1]TOTAL: Q" + h.precio + ".00[/h1]\n";
+    t += "[center]PLACA: " + h.placa + "\n\n";
+    t += "[left]ENTRADA:  " + h.horaE + "\n";
+    t += "[left]SALIDA:   " + h.horaS + "\n";
+    t += "[left]SELLOS:   " + h.sellos + "\n";
+    t += "[left]OPERADOR: " + h.operador + "\n";
+    t += "--------------------------\n";
+    t += "[center]¡GRACIAS POR SU VISITA!\n";
+    t += "\n\n\n\n";
 
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "black";
-    ctx.textAlign = "center";
-
-    ctx.font = "bold 32px Arial";
-    ctx.fillText("TORRE GRANADOS", 190, 50);
-    ctx.font = "24px Arial";
-    ctx.fillText("PAGO RECIBIDO", 190, 95);
-
-    // MONTO GIGANTE
-    ctx.font = "bold 80px Arial";
-    ctx.fillText("Q" + h.precio + ".00", 190, 185);
-
-    ctx.font = "bold 35px Arial";
-    ctx.fillText("PLACA: " + h.placa, 190, 250);
-
-    ctx.textAlign = "left";
-    ctx.font = "20px Arial";
-    ctx.fillText("ENTRADA:  " + h.horaE, 40, 310);
-    ctx.fillText("SALIDA:   " + h.horaS, 40, 350);
-    ctx.fillText("OPERADOR: " + h.operador, 40, 390);
-    
-    ctx.textAlign = "center";
-    ctx.font = "bold 22px Arial";
-    ctx.fillText("¡GRACIAS POR SU VISITA!", 190, 445);
-
-    const dataUrl = canvas.toDataURL("image/png");
-    window.location.href = "rawbt:(img)" + dataUrl;
+    window.location.href = "rawbt: " + encodeURIComponent(t);
 }
 
 function generarReporteHTML() {
     if(historial.length === 0) return alert("No hay datos");
     let total = historial.reduce((s, x) => s + x.precio, 0);
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 380;
-    canvas.height = 150 + (historial.length * 35);
-
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "black";
-    ctx.textAlign = "center";
-
-    ctx.font = "bold 28px Arial";
-    ctx.fillText("REPORTE DE VENTAS", 190, 40);
-    ctx.font = "20px Arial";
-    ctx.fillText("TORRE GRANADOS", 190, 70);
-    ctx.fillText("---------------------------------", 190, 95);
-
-    ctx.textAlign = "left";
-    let y = 130;
+    
+    let t = "";
+    t += "[center][b]REPORTE VENTAS[/b]\n";
+    t += "[center]TORRE GRANADOS\n";
+    t += "--------------------------\n";
     historial.forEach(x => {
-        ctx.font = "18px Arial";
-        ctx.fillText(`${x.placa} - Q${x.precio} (${x.horaS})`, 30, y);
-        y += 35;
+        t += "[left]" + x.placa + " - Q" + x.precio + "\n";
     });
+    t += "--------------------------\n";
+    t += "[center][h2]TOTAL: Q" + total + ".00[/h2]\n";
+    t += "\n\n\n\n";
 
-    ctx.textAlign = "center";
-    ctx.font = "bold 26px Arial";
-    ctx.fillText("TOTAL: Q" + total + ".00", 190, y + 40);
-
-    const dataUrl = canvas.toDataURL("image/png");
-    window.location.href = "rawbt:(img)" + dataUrl;
+    window.location.href = "rawbt: " + encodeURIComponent(t);
 }
