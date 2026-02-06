@@ -1,5 +1,6 @@
+// Credenciales actualizadas
 const usuariosSistemas = [
-    {user: "Admin", pass: "admin123", rol: "ADMIN"},
+    {user: "Admin", pass: "2025", rol: "ADMIN"},
     {user: "usuario1", pass: "1111", rol: "OPERADOR"}
 ];
 
@@ -17,10 +18,10 @@ function login(){
     let u = document.getElementById("loginUser").value;
     let p = document.getElementById("loginPass").value;
     usuarioActivo = usuariosSistemas.find(x => x.user === u && x.pass === p);
-    if(!usuarioActivo) return alert("Error");
+    if(!usuarioActivo) return alert("Usuario o Contraseña Incorrectos");
     document.getElementById("loginCard").style.display = "none";
     document.getElementById("appCard").style.display = "block";
-    document.getElementById("userDisplay").innerText = `👤 ${usuarioActivo.user.toUpperCase()}`;
+    document.getElementById("userDisplay").innerText = `👤 ${usuarioActivo.user}`;
     actualizarLista();
 }
 
@@ -45,7 +46,7 @@ function actualizarLista(){
         li.innerHTML = `
             <div class="item-info">
                 <div class="placa-badge">${v.placa}</div>
-                <div class="hora-entrada-text">${v.horaEntrada.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                <div style="font-weight:bold;">${v.horaEntrada.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
             </div>
             <div class="action-btns">
                 <button class="btn-sello" onclick="agregarSello(${i})">SELLO (${v.sellos})</button>
@@ -55,20 +56,13 @@ function actualizarLista(){
     });
 }
 
-function agregarSello(i){
-    activos[i].sellos++;
-    let v = activos[i];
-    if ((v.sellos * 30) >= Math.ceil((new Date() - v.horaEntrada)/60000)) darSalida(i);
-    else { localStorage.setItem("activos", JSON.stringify(activos)); actualizarLista(); }
-}
-
 function darSalida(i){
     let v = activos[i]; let s = new Date();
     let min = Math.max(0, Math.ceil((s - v.horaEntrada)/60000) - (v.sellos * 30));
     let pre = (v.placa[0]==="M") ? (min<=30?3:6) : (min<=30?5:10);
     if(min===0) pre=0;
 
-    let r = { placa: v.placa, horaE: v.horaEntrada.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), horaS: s.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), fecha: s.toLocaleDateString(), fechaISO: s.toISOString().split('T')[0], precio: pre, operador: usuarioActivo.user };
+    let r = { placa: v.placa, horaE: v.horaEntrada.toLocaleTimeString(), horaS: s.toLocaleTimeString(), fecha: s.toLocaleDateString(), fechaISO: s.toISOString().split('T')[0], precio: pre, operador: usuarioActivo.user };
     historial.push(r);
     imprimirTicketSalida(r);
     activos.splice(i, 1);
@@ -77,25 +71,43 @@ function darSalida(i){
     actualizarLista();
 }
 
+// FORMATO DE TICKET SOLO TEXTO (Largo y compatible)
 function imprimirTicketEntrada(v) {
-    const c = document.createElement('canvas'); const x = c.getContext('2d');
-    c.width = 384; c.height = 400; x.fillStyle="white"; x.fillRect(0,0,384,400); x.fillStyle="black"; x.textAlign="center";
-    x.font="bold 30px Arial"; x.fillText("TORRE GRANADOS", 192, 50);
-    x.font="bold 100px Arial"; x.fillText(v.placa, 192, 200);
-    x.font="22px Arial"; x.fillText("ENTRADA: " + v.horaEntrada.toLocaleString(), 192, 300);
-    window.location.href = "rawbt:(img)" + c.toDataURL("image/png");
+    let t = "";
+    t += "      TORRE GRANADOS      \n";
+    t += "--------------------------\n";
+    t += "    TICKET DE ENTRADA     \n";
+    t += "--------------------------\n\n";
+    t += " PLACA:    " + v.placa + "\n";
+    t += " FECHA:    " + v.horaEntrada.toLocaleDateString() + "\n";
+    t += " HORA:     " + v.horaEntrada.toLocaleTimeString() + "\n\n";
+    t += "--------------------------\n";
+    t += "   CONSERVE SU TICKET     \n";
+    t += "  VALOR EXTRAVIADO Q100   \n";
+    t += "\n\n\n\n\n\n"; // Espacios extra para que salga el ticket
+
+    window.location.href = "rawbt:" + encodeURIComponent(t);
 }
 
 function imprimirTicketSalida(h) {
-    const c = document.createElement('canvas'); const x = c.getContext('2d');
-    c.width = 384; c.height = 450; x.fillStyle="white"; x.fillRect(0,0,384,450); x.fillStyle="black"; x.textAlign="center";
-    x.font="bold 30px Arial"; x.fillText("TORRE GRANADOS", 192, 50);
-    x.font="bold 80px Arial"; x.fillText("Q" + h.precio + ".00", 192, 170);
-    x.font="bold 35px Arial"; x.fillText(h.placa, 192, 250);
-    x.font="20px Arial"; x.textAlign="left"; x.fillText("Entra: "+h.horaE, 50, 310); x.fillText("Sale: "+h.horaS, 50, 350);
-    window.location.href = "rawbt:(img)" + c.toDataURL("image/png");
+    let t = "";
+    t += "      TORRE GRANADOS      \n";
+    t += "--------------------------\n";
+    t += "    COMPROBANTE DE PAGO   \n";
+    t += "--------------------------\n\n";
+    t += " PLACA:    " + h.placa + "\n";
+    t += " TOTAL:    Q" + h.precio + ".00\n\n";
+    t += " ENTRADA:  " + h.horaE + "\n";
+    t += " SALIDA:   " + h.horaS + "\n";
+    t += " OPERADOR: " + h.operador + "\n\n";
+    t += "--------------------------\n";
+    t += "  GRACIAS POR SU VISITA   \n";
+    t += "\n\n\n\n\n\n";
+
+    window.location.href = "rawbt:" + encodeURIComponent(t);
 }
 
+// Las funciones de reporte se mantienen igual (descarga de imagen)
 function generarReporteHoy() {
     const hoy = new Date().toISOString().split('T')[0];
     const datos = historial.filter(h => h.fechaISO === hoy);
@@ -124,5 +136,5 @@ function descargarReporte(d, n) {
 function toggleHistorial() {
     const b = document.getElementById("historialBox");
     b.style.display = b.style.display === "none" ? "block" : "none";
-    if(b.style.display === "block") b.innerHTML = historial.slice().reverse().map(h => `<div style="border-bottom:1px solid #ddd; padding:5px;">${h.placa} - Q${h.precio} <small>(${h.fecha} ${h.horaS})</small></div>`).join('');
+    if(b.style.display === "block") b.innerHTML = historial.slice().reverse().map(h => `<div style="border-bottom:1px solid #ddd; padding:5px; font-size:12px;">${h.placa} - Q${h.precio} <small>(${h.fecha} ${h.horaS})</small></div>`).join('');
 }
