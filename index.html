@@ -10,7 +10,7 @@
 
     <div id="loginCard" class="login-wrapper">
         <div class="card-center">
-            <img class="logo-large" src="logotorre.png" alt="Logo">
+            <img class="logo-large" src="./logotorre.png" alt="Logo">
             <h2 class="title-ios">Acceso al Sistema</h2>
             <div class="input-container">
                 <div class="input-field">
@@ -34,12 +34,12 @@
         </div>
 
         <div class="header-logo-container">
-            <img class="logo-app-main" src="logotorre.png" alt="Logo">
+            <img class="logo-app-main" src="./logotorre.png" alt="Logo">
         </div>
 
         <div class="card center-content">
             <h2 class="title-ios-sub">INGRESAR VEHÍCULO</h2>
-            <input type="text" id="plateInput" class="input-plate" placeholder="PLACA">
+            <input type="text" id="plateInput" class="input-plate" placeholder="PLACA" style="text-transform: uppercase;">
             <button class="ios-btn btn-large" style="margin-top: 20px;" onclick="registrarEntrada()">REGISTRAR ENTRADA</button>
         </div>
 
@@ -51,10 +51,8 @@
         <div class="card center-content">
             <div class="button-row">
                 <button class="ios-btn-alt btn-med" onclick="toggleHistorial()">Ver Historial</button>
-                <button class="ios-btn-report btn-med" onclick="generarReporteHoy()">Reporte Hoy</button>
-                <button class="ios-btn-alt btn-med" onclick="abrirCalendario()">Buscar Fecha</button>
             </div>
-            <input type="date" id="datePicker" style="display:none; width:100%; margin-top:10px; padding:10px; border-radius:10px; border:1px solid #ddd;" onchange="reportePorCalendario(this.value)">
+            <input type="date" id="datePicker" style="display:none; width:100%; margin-top:10px; padding:10px;" onchange="reportePorCalendario(this.value)">
             
             <div id="historialBox" class="historial-container" style="display:none;"></div>
         </div>
