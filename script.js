@@ -11,7 +11,7 @@ const usuariosSistemas = [
 let usuarioActivo = null;
 
 // ==========================================
-// CARGA DE DATOS
+// CARGA DE DATOS (LocalStorage)
 // ==========================================
 let activos = JSON.parse(localStorage.getItem("activos")) || [];
 activos = activos.map(v => ({
@@ -22,7 +22,7 @@ activos = activos.map(v => ({
 let historial = JSON.parse(localStorage.getItem("historial")) || [];
 
 // ==========================================
-// RELOJ EN VIVO
+// RELOJ Y FECHA EN VIVO
 // ==========================================
 setInterval(() => {
     const relojCont = document.getElementById('reloj');
@@ -37,7 +37,7 @@ setInterval(() => {
 }, 1000);
 
 // ==========================================
-// LOGIN
+// LÓGICA DE SESIÓN (LOGIN)
 // ==========================================
 function login(){
     let u = document.getElementById("loginUser").value;
@@ -83,7 +83,7 @@ function agregarSello(index){
 
     if(descuentoSellos >= minutosTotales) {
         darSalida(index);
-        alert("Cubierto por sello. Salida automática.");
+        alert("Cubierto por sello. Salida automática procesada.");
     } else {
         localStorage.setItem("activos", JSON.stringify(activos));
         actualizarLista();
@@ -115,6 +115,7 @@ function darSalida(index){
 
     historial.push(registro);
     imprimirTicketSalida(registro);
+    
     activos.splice(index, 1);
     localStorage.setItem("activos", JSON.stringify(activos));
     localStorage.setItem("historial", JSON.stringify(historial));
@@ -143,77 +144,144 @@ function toggleHistorial(){
     let box = document.getElementById("historialBox");
     if(box.style.display === "none") {
         box.style.display = "block";
-        let html = historial.slice().reverse().map(h => `
-            <div style="padding:8px; border-bottom:1px solid #eee; font-size:11px;">
-                <b>${h.placa}</b> | Q${h.precio} | Op: ${h.operador}<br>
-                <small>${h.horaE} - ${h.horaS} (${h.fecha})</small>
-            </div>
-        `).join('');
-        box.innerHTML = html || "Sin registros";
+        renderizarHistorial();
     } else {
         box.style.display = "none";
     }
 }
 
+function renderizarHistorial(){
+    let box = document.getElementById("historialBox");
+    if(historial.length > 0) {
+        let listaHTML = historial.slice().reverse().map(h => `
+            <div style="padding:10px; border-bottom:1px solid #eee; font-size:11px; text-align:left;">
+                <b>${h.placa}</b> | Q${h.precio} | Op: ${h.operador}<br>
+                <small>E: ${h.horaE} - S: ${h.horaS} (${h.fecha})</small>
+            </div>
+        `).join('');
+        
+        if(usuarioActivo.rol === "ADMIN") {
+            listaHTML += `<button class="ios-btn-danger" style="width:100%; margin-top:10px;" onclick="borrarHistorialDefinitivo()">BORRAR TODO EL HISTORIAL</button>`;
+        }
+        box.innerHTML = listaHTML;
+    } else {
+        box.innerHTML = "<p style='padding:10px; font-size:12px; color:#888;'>Sin registros.</p>";
+    }
+}
+
+function borrarHistorialDefinitivo(){
+    if(confirm("¿Seguro que deseas borrar TODO el historial definitivamente?")){
+        historial = [];
+        localStorage.setItem("historial", JSON.stringify(historial));
+        renderizarHistorial();
+        alert("Historial borrado.");
+    }
+}
+
 // ==========================================
-// IMPRESIÓN LIMPIA PARA RAWBT 7.1.2
+// IMPRESIÓN POR IMAGEN (PARA TAMAÑO GIGANTE)
 // ==========================================
 
 function imprimirTicketEntrada(v) {
-    // Espaciado manual para centrar y resaltar la placa
-    let placaGrande = v.placa.split('').join('  '); // Ejemplo: P 1 2 3 A B C
-    
-    let t = "";
-    t += "      TORRE GRANADOS      \n";
-    t += "--------------------------\n";
-    t += "    TICKET DE ENTRADA     \n";
-    t += "--------------------------\n\n";
-    t += "PLACA:\n";
-    t += "  " + placaGrande + "  \n\n"; 
-    t += "FECHA: " + v.horaEntrada.toLocaleDateString() + "\n";
-    t += "HORA:  " + v.horaEntrada.toLocaleTimeString() + "\n";
-    t += "--------------------------\n";
-    t += "   CONSERVE SU TICKET     \n";
-    t += " VALOR EXTRAVIADO: Q100   \n";
-    t += "\n\n\n\n"; 
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 380; canvas.height = 420;
+    ctx.fillStyle = "white"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "black"; ctx.textAlign = "center";
 
-    // Enlace limpio para RawBT 7.x
-    window.location.href = "rawbt:base64," + btoa(unescape(encodeURIComponent(t)));
+    ctx.font = "bold 35px Arial"; ctx.fillText("TORRE GRANADOS", 190, 50);
+    ctx.font = "24px Arial"; ctx.fillText("TICKET DE ENTRADA", 190, 90);
+    ctx.fillText("---------------------------------", 190, 115);
+
+    // PLACA GIGANTE
+    ctx.font = "bold 100px Arial"; ctx.fillText(v.placa, 190, 215);
+
+    ctx.font = "24px Arial"; ctx.fillText("---------------------------------", 190, 260);
+    ctx.textAlign = "left";
+    ctx.fillText("FECHA: " + v.horaEntrada.toLocaleDateString(), 30, 305);
+    ctx.fillText("HORA:  " + v.horaEntrada.toLocaleTimeString(), 30, 345);
+    
+    ctx.textAlign = "center";
+    ctx.font = "bold 22px Arial"; ctx.fillText("CONSERVE SU TICKET", 190, 395);
+
+    const dataUrl = canvas.toDataURL("image/png");
+    window.location.href = "rawbt:image/png;base64," + dataUrl.split(',')[1];
 }
 
 function imprimirTicketSalida(h) {
-    let t = "";
-    t += "      TORRE GRANADOS      \n";
-    t += "--------------------------\n";
-    t += "     COMPROBANTE PAGO     \n";
-    t += "--------------------------\n\n";
-    t += "PLACA: " + h.placa + "\n";
-    t += "TOTAL: Q" + h.precio + ".00\n\n";
-    t += "ENTRADA:  " + h.horaE + "\n";
-    t += "SALIDA:   " + h.horaS + "\n";
-    t += "SELLOS:   " + h.sellos + "\n";
-    t += "OPERADOR: " + h.operador + "\n";
-    t += "--------------------------\n";
-    t += "  GRACIAS POR SU VISITA   \n";
-    t += "\n\n\n\n";
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 380; canvas.height = 480;
+    ctx.fillStyle = "white"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "black"; ctx.textAlign = "center";
 
-    window.location.href = "rawbt:base64," + btoa(unescape(encodeURIComponent(t)));
+    ctx.font = "bold 35px Arial"; ctx.fillText("TORRE GRANADOS", 190, 50);
+    ctx.font = "26px Arial"; ctx.fillText("PAGO RECIBIDO", 190, 95);
+
+    // MONTO GIGANTE
+    ctx.font = "bold 90px Arial"; ctx.fillText("Q" + h.precio + ".00", 190, 185);
+    ctx.font = "bold 40px Arial"; ctx.fillText("PLACA: " + h.placa, 190, 255);
+
+    ctx.textAlign = "left"; ctx.font = "22px Arial";
+    ctx.fillText("ENTRADA:  " + h.horaE, 40, 315);
+    ctx.fillText("SALIDA:   " + h.horaS, 40, 355);
+    ctx.fillText("OPERADOR: " + h.operador, 40, 395);
+    
+    ctx.textAlign = "center"; ctx.font = "bold 24px Arial";
+    ctx.fillText("¡GRACIAS POR SU VISITA!", 190, 450);
+
+    const dataUrl = canvas.toDataURL("image/png");
+    window.location.href = "rawbt:image/png;base64," + dataUrl.split(',')[1];
 }
 
-function generarReporteHTML() {
-    if(historial.length === 0) return alert("No hay datos");
-    let total = historial.reduce((s, x) => s + x.precio, 0);
-    
-    let t = "";
-    t += "      REPORTE VENTAS      \n";
-    t += "      TORRE GRANADOS      \n";
-    t += "--------------------------\n";
-    historial.forEach(x => {
-        t += x.placa + " - Q" + x.precio + "\n";
-    });
-    t += "--------------------------\n";
-    t += " TOTAL DIA: Q" + total + ".00\n";
-    t += "\n\n\n\n";
+// ==========================================
+// REPORTE VISUAL (SIN IMPRIMIR - COMPARTIR)
+// ==========================================
 
-    window.location.href = "rawbt:base64," + btoa(unescape(encodeURIComponent(t)));
+async function generarReporteHTML() {
+    if(historial.length === 0) return alert("No hay registros hoy.");
+    let total = historial.reduce((s, x) => s + x.precio, 0);
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 450;
+    canvas.height = 250 + (historial.length * 45);
+
+    ctx.fillStyle = "white"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "black"; ctx.textAlign = "center";
+
+    ctx.font = "bold 34px Arial"; ctx.fillText("REPORTE DE VENTAS", 225, 60);
+    ctx.font = "22px Arial"; ctx.fillText("TORRE GRANADOS", 225, 100);
+    ctx.fillText("-------------------------------------------", 225, 130);
+
+    ctx.textAlign = "left";
+    let y = 180;
+    historial.forEach(x => {
+        ctx.font = "20px Arial";
+        ctx.fillText(`${x.placa} | Q${x.precio} | ${x.horaS}`, 40, y);
+        y += 45;
+    });
+
+    ctx.textAlign = "center";
+    ctx.font = "bold 34px Arial";
+    ctx.fillText("TOTAL: Q" + total + ".00", 225, y + 60);
+
+    canvas.toBlob(async (blob) => {
+        const file = new File([blob], `Reporte_${new Date().toLocaleDateString()}.png`, { type: "image/png" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: 'Reporte de Ventas',
+                    text: 'Resumen de ventas de hoy.'
+                });
+            } catch (err) { console.error("Error al compartir", err); }
+        } else {
+            const link = document.createElement('a');
+            link.download = 'Reporte_Ventas.png';
+            link.href = canvas.toDataURL();
+            link.click();
+            alert("Reporte guardado en descargas.");
+        }
+    });
 }
