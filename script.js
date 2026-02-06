@@ -1,3 +1,6 @@
+// ==========================================
+// CONFIGURACIÓN DE USUARIOS Y ESTADO
+// ==========================================
 const usuariosSistemas = [
     {user: "Admin", pass: "2025", rol: "ADMIN"},
     {user: "usuario1", pass: "1111", rol: "OPERADOR"}
@@ -5,10 +8,13 @@ const usuariosSistemas = [
 
 let usuarioActivo = null;
 let activos = JSON.parse(localStorage.getItem("activos")) || [];
+// Convertir strings de fecha de nuevo a objetos Date
 activos = activos.map(v => ({ ...v, horaEntrada: new Date(v.horaEntrada) }));
 let historial = JSON.parse(localStorage.getItem("historial")) || [];
 
-// RELOJ
+// ==========================================
+// RELOJ Y FECHA EN VIVO
+// ==========================================
 setInterval(() => {
     const ahora = new Date();
     const r = document.getElementById('reloj');
@@ -17,31 +23,51 @@ setInterval(() => {
     if(f) f.innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }, 1000);
 
-// ENTER Y MAYÚSCULAS
+// ==========================================
+// LÓGICA DE TECLADO (ENTER Y MAYÚSCULAS)
+// ==========================================
 document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("loginUser").addEventListener("keypress", (e) => { if(e.key === "Enter") document.getElementById("loginPass").focus(); });
-    document.getElementById("loginPass").addEventListener("keypress", (e) => { if(e.key === "Enter") login(); });
-    document.getElementById("plateInput").addEventListener("keypress", (e) => { if(e.key === "Enter") registrarEntrada(); });
+    const userInput = document.getElementById("loginUser");
+    const passInput = document.getElementById("loginPass");
+    const plateInput = document.getElementById("plateInput");
+
+    if(userInput) userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") passInput.focus(); });
+    if(passInput) passInput.addEventListener("keypress", (e) => { if (e.key === "Enter") login(); });
+    if(plateInput) plateInput.addEventListener("keypress", (e) => { if (e.key === "Enter") registrarEntrada(); });
 });
 
+// ==========================================
+// SESIÓN
+// ==========================================
 function login() {
     let u = document.getElementById("loginUser").value;
     let p = document.getElementById("loginPass").value;
     usuarioActivo = usuariosSistemas.find(x => x.user.toLowerCase() === u.toLowerCase() && x.pass === p);
-    if(!usuarioActivo) return alert("Error de acceso");
+    
+    if(!usuarioActivo) {
+        alert("Usuario o Contraseña incorrectos");
+        document.getElementById("loginPass").value = "";
+        return;
+    }
+    
     document.getElementById("loginCard").style.display = "none";
     document.getElementById("appCard").style.display = "block";
     document.getElementById("userDisplay").innerText = "OPERADOR: " + usuarioActivo.user.toUpperCase();
     actualizarLista();
 }
 
+// ==========================================
+// REGISTRO DE VEHÍCULOS
+// ==========================================
 function registrarEntrada() {
     let input = document.getElementById("plateInput");
     let placa = input.value.trim().toUpperCase();
     if(!placa) return;
+    
     let v = { placa, horaEntrada: new Date(), sellos: 0 };
     activos.push(v);
     localStorage.setItem("activos", JSON.stringify(activos));
+    
     imprimirTicketEntrada(v);
     input.value = "";
     actualizarLista();
@@ -53,9 +79,11 @@ function actualizarLista() {
     activos.forEach((v, i) => {
         let li = document.createElement("li");
         li.className = "vehiculo-item";
+        // Diseño de 2 líneas para POS (Placa arriba, botones abajo)
         li.style.flexDirection = "column";
         li.style.alignItems = "flex-start";
         li.style.gap = "10px";
+        
         li.innerHTML = `
             <div style="display:flex; width:100%; justify-content:space-between; align-items:center;">
                 <div class="placa-badge">${v.placa}</div>
@@ -72,25 +100,44 @@ function actualizarLista() {
 function agregarSello(i) {
     activos[i].sellos++;
     let v = activos[i];
-    let minT = Math.ceil((new Date() - v.horaEntrada)/60000);
-    if((v.sellos * 30) >= minT) darSalida(i);
-    else { localStorage.setItem("activos", JSON.stringify(activos)); actualizarLista(); }
+    let minTranscurridos = Math.ceil((new Date() - v.horaEntrada) / 60000);
+    // Si los sellos cubren el tiempo, dar salida automática
+    if((v.sellos * 30) >= minTranscurridos) darSalida(i);
+    else { 
+        localStorage.setItem("activos", JSON.stringify(activos)); 
+        actualizarLista(); 
+    }
 }
 
 function darSalida(i) {
-    let v = activos[i]; let s = new Date();
-    let minC = Math.max(0, Math.ceil((s - v.horaEntrada)/60000) - (v.sellos * 30));
-    let pre = (v.placa[0]==="M") ? (minC<=30?3:6) : (minC<=30?5:10);
-    if(minC===0) pre=0;
-    let r = { placa:v.placa, horaE:v.horaEntrada.toLocaleTimeString(), horaS:s.toLocaleTimeString(), fechaISO:s.toISOString().split('T')[0], precio:pre };
+    let v = activos[i]; 
+    let s = new Date();
+    let minTotal = Math.ceil((s - v.horaEntrada) / 60000);
+    let minCobrar = Math.max(0, minTotal - (v.sellos * 30));
+    
+    let pre = (v.placa[0] === "M") ? (minCobrar <= 30 ? 3 : 6) : (minCobrar <= 30 ? 5 : 10);
+    if(minCobrar === 0) pre = 0;
+
+    let r = { 
+        placa: v.placa, 
+        horaE: v.horaEntrada.toLocaleTimeString(), 
+        horaS: s.toLocaleTimeString(), 
+        fechaISO: s.toISOString().split('T')[0], 
+        precio: pre 
+    };
+    
     historial.push(r);
     localStorage.setItem("historial", JSON.stringify(historial));
     imprimirTicketSalida(r);
+    
     activos.splice(i, 1);
     localStorage.setItem("activos", JSON.stringify(activos));
     actualizarLista();
 }
 
+// ==========================================
+// IMPRESIÓN DE TICKETS (CENTRADOS)
+// ==========================================
 function imprimirTicketEntrada(v) {
     let t = "\n      TORRE GRANADOS\n";
     t += "--------------------------\n";
@@ -104,13 +151,17 @@ function imprimirTicketEntrada(v) {
     t += "      30 MIN GRATIS EN:\n";
     t += "       - GUATE PRENDA\n";
     t += "       - ALMACEN CHINO\n";
-    t += "      - TIENDA DE MOTOS\n\n"; // Espacio entre clientes
+    t += "      - TIENDA DE MOTOS\n";
+    t += "--------------------------\n"; 
     t += "      AVISO IMPORTANTE:\n";
     t += "  No nos hacemos responsables\n";
     t += "  por objetos olvidados, ni\n";
-    t += "  vehiculos mal estacionados.\n";
-    t += "   Ticket extraviado: Q50.00\n\n"; // Espacio en blanco antes de sello
-    t += "   ____________________\n";
+    t += "  vehiculos mal estacionados.\n\n";
+    t += "--------------------------\n";
+    t += "   Ticket extraviado: Q50.00\n";
+    t += "--------------------------\n";
+    t += "\n\n\n\n\n"; 
+    t += "   --------------------\n";
     t += "        SELLO AQUI\n\n\n\n\n";
     window.location.href = "rawbt:" + encodeURIComponent(t);
 }
@@ -129,6 +180,9 @@ function imprimirTicketSalida(h) {
     window.location.href = "rawbt:" + encodeURIComponent(t);
 }
 
+// ==========================================
+// HISTORIAL Y REPORTES (SOLO ADMIN)
+// ==========================================
 function toggleHistorial() {
     let b = document.getElementById("historialBox");
     b.style.display = (b.style.display === "none") ? "block" : "none";
@@ -147,14 +201,18 @@ function toggleHistorial() {
 }
 
 function borrarHistorial() {
-    if(confirm("¿Desea borrar todo el historial?")) { historial = []; localStorage.setItem("historial", "[]"); toggleHistorial(); }
+    if(confirm("¿Desea borrar todo el historial definitivamente?")) { 
+        historial = []; 
+        localStorage.setItem("historial", "[]"); 
+        toggleHistorial(); 
+    }
 }
 
 function generarReporteHoy() {
     let hoy = new Date().toISOString().split('T')[0];
     let datos = historial.filter(h => h.fechaISO === hoy);
-    if(datos.length === 0) return alert("Sin ventas");
-    descargarReporte(datos, "HOY");
+    if(datos.length === 0) return alert("No hay ventas registradas hoy.");
+    descargarReporte(datos, hoy);
 }
 
 function abrirCalendario() {
@@ -164,8 +222,9 @@ function abrirCalendario() {
 }
 
 function reportePorCalendario(fecha) {
+    if(!fecha) return;
     let datos = historial.filter(h => h.fechaISO === fecha);
-    if(datos.length === 0) alert("Sin datos");
+    if(datos.length === 0) alert("No hay datos para esta fecha.");
     else descargarReporte(datos, fecha);
     document.getElementById("datePicker").style.display = "none";
 }
@@ -176,7 +235,6 @@ function descargarReporte(d, n) {
     c.width = 450; c.height = 220 + (d.length * 35);
     x.fillStyle="white"; x.fillRect(0,0,c.width,c.height); x.fillStyle="black";
     
-    // Encabezado del reporte
     x.font="bold 20px Arial"; x.textAlign="center";
     x.fillText("REPORTE DE VENTAS", 225, 40);
     
@@ -198,5 +256,8 @@ function descargarReporte(d, n) {
     x.font="bold 18px Arial"; 
     x.fillText("TOTAL GENERAL: Q" + d.reduce((s,v)=>s+v.precio,0) + ".00", 30, y+25);
     
-    const a = document.createElement('a'); a.download=`Reporte_${n}.png`; a.href=c.toDataURL(); a.click();
+    const a = document.createElement('a'); 
+    a.download=`Reporte_${n}_${usuarioActivo.user}.png`; 
+    a.href=c.toDataURL(); 
+    a.click();
 }
