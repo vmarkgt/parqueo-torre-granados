@@ -15,7 +15,7 @@ setInterval(() => {
     document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }, 1000);
 
-// MANEJO DE ENTER
+// MANEJO DE ENTER Y MAYÚSCULAS
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("loginUser").addEventListener("keypress", (e) => { if(e.key === "Enter") document.getElementById("loginPass").focus(); });
     document.getElementById("loginPass").addEventListener("keypress", (e) => { if(e.key === "Enter") login(); });
@@ -26,16 +26,16 @@ function login() {
     let u = document.getElementById("loginUser").value;
     let p = document.getElementById("loginPass").value;
     usuarioActivo = usuariosSistemas.find(x => x.user.toLowerCase() === u.toLowerCase() && x.pass === p);
-    if(!usuarioActivo) return alert("Error");
+    if(!usuarioActivo) return alert("Error de acceso");
     document.getElementById("loginCard").style.display = "none";
     document.getElementById("appCard").style.display = "block";
-    document.getElementById("userDisplay").innerText = "OPERADOR: " + usuarioActivo.user;
+    document.getElementById("userDisplay").innerText = "OPERADOR: " + usuarioActivo.user.toUpperCase();
     actualizarLista();
 }
 
 function registrarEntrada() {
     let input = document.getElementById("plateInput");
-    let placa = input.value.trim().toUpperCase();
+    let placa = input.value.trim().toUpperCase(); // Fuerza mayúscula en datos
     if(!placa) return;
     let v = { placa, horaEntrada: new Date(), sellos: 0 };
     activos.push(v);
@@ -51,12 +51,19 @@ function actualizarLista() {
     activos.forEach((v, i) => {
         let li = document.createElement("li");
         li.className = "vehiculo-item";
+        // Ajuste de 2 líneas para que no se amontone en el POS
+        li.style.flexDirection = "column";
+        li.style.alignItems = "flex-start";
+        li.style.gap = "10px";
+        
         li.innerHTML = `
-            <div class="placa-badge">${v.placa}</div>
-            <div style="font-weight:700;">${v.horaEntrada.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-            <div style="display:flex; gap:5px;">
-                <button class="btn-sello" onclick="agregarSello(${i})">SELLO (${v.sellos})</button>
-                <button class="btn-salida-list" onclick="darSalida(${i})">SALIDA</button>
+            <div style="display:flex; width:100%; justify-content:space-between; align-items:center;">
+                <div class="placa-badge">${v.placa}</div>
+                <div style="font-weight:700; font-size:14px;">${v.horaEntrada.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+            </div>
+            <div style="display:flex; gap:10px; width:100%;">
+                <button class="btn-sello" style="flex:1;" onclick="agregarSello(${i})">SELLO (${v.sellos})</button>
+                <button class="btn-salida-list" style="flex:1;" onclick="darSalida(${i})">SALIDA</button>
             </div>`;
         cont.appendChild(li);
     });
@@ -86,12 +93,15 @@ function darSalida(i) {
 }
 
 function imprimirTicketEntrada(v) {
-    let t = "\n      TORRE GRANADOS\n--------------------------\n ENTRADA\n PLACA: " + v.placa + "\n FECHA: " + v.horaEntrada.toLocaleString() + "\n--------------------------\n\n\n\n";
+    let t = "\n      TORRE GRANADOS\n--------------------------\n     TICKET ENTRADA\n--------------------------\n PLACA: " + v.placa + "\n HORA:  " + v.horaEntrada.toLocaleString() + "\n--------------------------\n";
+    t += "30 MIN GRATIS EN:\n- GUATE PRENDA\n- ALMACEN CHINO\n- TIENDA DE MOTOS\n\n";
+    t += "AVISO IMPORTANTE:\nNo nos hacemos responsables\npor objetos olvidados, ni\nvehiculos mal estacionados.\nTicket extraviado: Q50.00\n";
+    t += "\n\n   ____________________\n       SELLO AQUÍ\n\n\n\n\n";
     window.location.href = "rawbt:" + encodeURIComponent(t);
 }
 
 function imprimirTicketSalida(h) {
-    let t = "\n      TORRE GRANADOS\n--------------------------\n SALIDA\n PLACA: " + h.placa + "\n TOTAL: Q" + h.precio + ".00\n--------------------------\n\n\n\n";
+    let t = "\n      TORRE GRANADOS\n--------------------------\n     TICKET SALIDA\n--------------------------\n PLACA:  " + h.placa + "\n ENTRADA: " + h.horaE + "\n SALIDA:  " + h.horaS + "\n TOTAL:   Q" + h.precio + ".00\n--------------------------\n\n      VUELVA PRONTO\n\n\n\n\n";
     window.location.href = "rawbt:" + encodeURIComponent(t);
 }
 
@@ -99,14 +109,22 @@ function toggleHistorial() {
     let b = document.getElementById("historialBox");
     b.style.display = (b.style.display === "none") ? "block" : "none";
     if(b.style.display === "block") {
-        let html = historial.slice().reverse().map(h => `<div style="font-size:11px; border-bottom:1px solid #eee; padding:5px;">${h.placa} | Q${h.precio} | ${h.horaS}</div>`).join('');
-        if(usuarioActivo.rol === "ADMIN") html += `<button class="ios-btn-danger" onclick="borrarHistorial()">BORRAR HISTORIAL</button>`;
+        let html = "";
+        // Si es Admin, mostrar botones de reporte arriba del historial
+        if(usuarioActivo.rol === "ADMIN") {
+            html += `<div style="display:flex; gap:5px; margin-bottom:15px;">
+                        <button class="ios-btn-report" style="font-size:12px; padding:10px;" onclick="generarReporteHoy()">Hoy</button>
+                        <button class="ios-btn-alt" style="font-size:12px; padding:10px;" onclick="abrirCalendario()">Buscar</button>
+                        <button class="ios-btn-danger" style="font-size:12px; padding:10px; margin:0;" onclick="borrarHistorial()">Borrar</button>
+                     </div>`;
+        }
+        html += historial.slice().reverse().map(h => `<div style="font-size:11px; border-bottom:1px solid #eee; padding:5px;">${h.placa} | Q${h.precio} | ${h.horaS}</div>`).join('');
         b.innerHTML = html;
     }
 }
 
 function borrarHistorial() {
-    if(confirm("¿Borrar?")) { historial = []; localStorage.setItem("historial", "[]"); toggleHistorial(); }
+    if(confirm("¿Desea borrar todo el historial?")) { historial = []; localStorage.setItem("historial", "[]"); toggleHistorial(); }
 }
 
 function generarReporteHoy() {
