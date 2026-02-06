@@ -3,49 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Torre Granados POS</title>
+    <title>Torre Granados Premium</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <div id="loginCard" class="card">
+        <div id="loginCard" class="card login-anim">
+            <div class="logo-circle">TG</div>
             <h1 class="logo-text">TORRE GRANADOS</h1>
-            <p class="subtitle">Control de Parqueo</p>
+            <p class="subtitle">Gestión de Estacionamiento</p>
             <div class="login-form">
                 <input type="text" id="loginUser" placeholder="Usuario">
                 <input type="password" id="loginPass" placeholder="Contraseña">
-                <button class="btn-primary" onclick="login()">INGRESAR</button>
+                <button class="btn-main" onclick="login()">ENTRAR AL SISTEMA</button>
             </div>
         </div>
 
         <div id="appCard" class="card" style="display:none;">
             <div class="header-app">
-                <div class="user-info"><span id="userDisplay">👤 Usuario</span></div>
+                <div class="user-pill"><span id="userDisplay">👤 Usuario</span></div>
                 <div class="clock-box">
                     <div id="reloj">00:00:00</div>
                     <div id="fecha">--/--/----</div>
                 </div>
             </div>
 
-            <div class="main-actions">
-                <div class="input-group">
-                    <label>NÚMERO DE PLACA</label>
-                    <input type="text" id="plateInput" placeholder="P000ABC" autocomplete="off">
-                    <button class="btn-entrada" onclick="registrarEntrada()">REGISTRAR ENTRADA</button>
-                </div>
+            <div class="entry-section">
+                <label class="input-label">NÚMERO DE PLACA</label>
+                <input type="text" id="plateInput" placeholder="P-000ABC" autocomplete="off">
+                <button class="btn-entrada-v2" onclick="registrarEntrada()">REGISTRAR ENTRADA</button>
             </div>
 
-            <div class="section-title"><h3>Vehículos en Parqueo</h3></div>
+            <div class="list-header">
+                <h3>VEHÍCULOS ACTIVOS</h3>
+            </div>
             <ul id="activeList" class="vehiculos-lista"></ul>
 
-            <div class="section-title"><h3>Reportes</h3></div>
-            <div class="report-grid">
-                <button class="btn-report-day" onclick="generarReporteHoy()">📦 HOY</button>
-                <button class="btn-report-search" onclick="generarReporteFecha()">🔍 FECHA</button>
-            </div>
+            <hr class="divider">
 
-            <button class="btn-history-toggle" onclick="toggleHistorial()">📂 VER HISTORIAL</button>
-            <div id="historialBox" class="historial-container" style="display:none;"></div>
+            <button class="btn-outline" onclick="toggleReportes()">📊 GESTIÓN DE REPORTES</button>
+            
+            <div id="reportPanel" class="report-container" style="display:none;">
+                <div class="report-grid">
+                    <button class="btn-green" onclick="generarReporteHoy()">📦 REPORTE HOY</button>
+                    <button class="btn-purple" onclick="generarReporteFecha()">🔍 BUSCAR FECHA</button>
+                </div>
+                <button class="btn-gray" onclick="toggleHistorial()">📂 VER LISTADO EN PANTALLA</button>
+                <div id="historialBox" class="historial-list" style="display:none;"></div>
+            </div>
         </div>
     </div>
     <script src="script.js"></script>
