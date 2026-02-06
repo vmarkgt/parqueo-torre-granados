@@ -54,7 +54,7 @@ function login(){
 }
 
 // ==========================================
-// REGISTRAR ENTRADA
+// GESTIÓN DE VEHÍCULOS
 // ==========================================
 function registrarEntrada(){
     let input = document.getElementById("plateInput");
@@ -70,16 +70,11 @@ function registrarEntrada(){
 
     activos.push(nuevoVehiculo);
     localStorage.setItem("activos", JSON.stringify(activos));
-    
     imprimirTicketEntrada(nuevoVehiculo);
-    
     input.value = "";
     actualizarLista();
 }
 
-// ==========================================
-// LÓGICA DE SELLO Y SALIDA
-// ==========================================
 function agregarSello(index){
     activos[index].sellos += 1;
     let v = activos[index];
@@ -120,7 +115,6 @@ function darSalida(index){
 
     historial.push(registro);
     imprimirTicketSalida(registro);
-    
     activos.splice(index, 1);
     localStorage.setItem("activos", JSON.stringify(activos));
     localStorage.setItem("historial", JSON.stringify(historial));
@@ -162,46 +156,48 @@ function toggleHistorial(){
 }
 
 // ==========================================
-// IMPRESIÓN COMPATIBLE (FORMATO RAWBT TXT)
+// IMPRESIÓN LIMPIA PARA RAWBT 7.1.2
 // ==========================================
 
 function imprimirTicketEntrada(v) {
-    // Usamos etiquetas de RawBT que funcionan en casi todas las versiones
+    // Espaciado manual para centrar y resaltar la placa
+    let placaGrande = v.placa.split('').join('  '); // Ejemplo: P 1 2 3 A B C
+    
     let t = "";
-    t += "[center][b]TORRE GRANADOS[/b]\n";
+    t += "      TORRE GRANADOS      \n";
     t += "--------------------------\n";
-    t += "[center]TICKET DE ENTRADA\n";
+    t += "    TICKET DE ENTRADA     \n";
     t += "--------------------------\n\n";
-    t += "[center]PLACA:\n";
-    t += "[center][h2]" + v.placa + "[/h2]\n\n";
-    t += "[left]FECHA: " + v.horaEntrada.toLocaleDateString() + "\n";
-    t += "[left]HORA:  " + v.horaEntrada.toLocaleTimeString() + "\n";
+    t += "PLACA:\n";
+    t += "  " + placaGrande + "  \n\n"; 
+    t += "FECHA: " + v.horaEntrada.toLocaleDateString() + "\n";
+    t += "HORA:  " + v.horaEntrada.toLocaleTimeString() + "\n";
     t += "--------------------------\n";
-    t += "[center]CONSERVE SU TICKET\n";
-    t += "[center][b]VALOR EXTRAVIADO: Q100[/b]\n";
+    t += "   CONSERVE SU TICKET     \n";
+    t += " VALOR EXTRAVIADO: Q100   \n";
     t += "\n\n\n\n"; 
 
-    // IMPORTANTE: Nota que quitamos el (txt) pegado
-    window.location.href = "rawbt: " + encodeURIComponent(t);
+    // Enlace limpio para RawBT 7.x
+    window.location.href = "rawbt:base64," + btoa(unescape(encodeURIComponent(t)));
 }
 
 function imprimirTicketSalida(h) {
     let t = "";
-    t += "[center][b]TORRE GRANADOS[/b]\n";
+    t += "      TORRE GRANADOS      \n";
     t += "--------------------------\n";
-    t += "[center]COMPROBANTE PAGO\n";
+    t += "     COMPROBANTE PAGO     \n";
     t += "--------------------------\n\n";
-    t += "[center][h1]TOTAL: Q" + h.precio + ".00[/h1]\n";
-    t += "[center]PLACA: " + h.placa + "\n\n";
-    t += "[left]ENTRADA:  " + h.horaE + "\n";
-    t += "[left]SALIDA:   " + h.horaS + "\n";
-    t += "[left]SELLOS:   " + h.sellos + "\n";
-    t += "[left]OPERADOR: " + h.operador + "\n";
+    t += "PLACA: " + h.placa + "\n";
+    t += "TOTAL: Q" + h.precio + ".00\n\n";
+    t += "ENTRADA:  " + h.horaE + "\n";
+    t += "SALIDA:   " + h.horaS + "\n";
+    t += "SELLOS:   " + h.sellos + "\n";
+    t += "OPERADOR: " + h.operador + "\n";
     t += "--------------------------\n";
-    t += "[center]¡GRACIAS POR SU VISITA!\n";
+    t += "  GRACIAS POR SU VISITA   \n";
     t += "\n\n\n\n";
 
-    window.location.href = "rawbt: " + encodeURIComponent(t);
+    window.location.href = "rawbt:base64," + btoa(unescape(encodeURIComponent(t)));
 }
 
 function generarReporteHTML() {
@@ -209,15 +205,15 @@ function generarReporteHTML() {
     let total = historial.reduce((s, x) => s + x.precio, 0);
     
     let t = "";
-    t += "[center][b]REPORTE VENTAS[/b]\n";
-    t += "[center]TORRE GRANADOS\n";
+    t += "      REPORTE VENTAS      \n";
+    t += "      TORRE GRANADOS      \n";
     t += "--------------------------\n";
     historial.forEach(x => {
-        t += "[left]" + x.placa + " - Q" + x.precio + "\n";
+        t += x.placa + " - Q" + x.precio + "\n";
     });
     t += "--------------------------\n";
-    t += "[center][h2]TOTAL: Q" + total + ".00[/h2]\n";
+    t += " TOTAL DIA: Q" + total + ".00\n";
     t += "\n\n\n\n";
 
-    window.location.href = "rawbt: " + encodeURIComponent(t);
+    window.location.href = "rawbt:base64," + btoa(unescape(encodeURIComponent(t)));
 }
