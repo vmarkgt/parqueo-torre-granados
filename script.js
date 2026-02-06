@@ -11,11 +11,13 @@ let historial = JSON.parse(localStorage.getItem("historial")) || [];
 // RELOJ
 setInterval(() => {
     const ahora = new Date();
-    document.getElementById('reloj').innerText = ahora.toLocaleTimeString();
-    document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const r = document.getElementById('reloj');
+    const f = document.getElementById('fecha');
+    if(r) r.innerText = ahora.toLocaleTimeString();
+    if(f) f.innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }, 1000);
 
-// MANEJO DE ENTER Y MAYÚSCULAS
+// ENTER Y MAYÚSCULAS
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("loginUser").addEventListener("keypress", (e) => { if(e.key === "Enter") document.getElementById("loginPass").focus(); });
     document.getElementById("loginPass").addEventListener("keypress", (e) => { if(e.key === "Enter") login(); });
@@ -35,7 +37,7 @@ function login() {
 
 function registrarEntrada() {
     let input = document.getElementById("plateInput");
-    let placa = input.value.trim().toUpperCase(); // Fuerza mayúscula en datos
+    let placa = input.value.trim().toUpperCase();
     if(!placa) return;
     let v = { placa, horaEntrada: new Date(), sellos: 0 };
     activos.push(v);
@@ -51,11 +53,9 @@ function actualizarLista() {
     activos.forEach((v, i) => {
         let li = document.createElement("li");
         li.className = "vehiculo-item";
-        // Ajuste de 2 líneas para que no se amontone en el POS
         li.style.flexDirection = "column";
         li.style.alignItems = "flex-start";
         li.style.gap = "10px";
-        
         li.innerHTML = `
             <div style="display:flex; width:100%; justify-content:space-between; align-items:center;">
                 <div class="placa-badge">${v.placa}</div>
@@ -82,7 +82,6 @@ function darSalida(i) {
     let minC = Math.max(0, Math.ceil((s - v.horaEntrada)/60000) - (v.sellos * 30));
     let pre = (v.placa[0]==="M") ? (minC<=30?3:6) : (minC<=30?5:10);
     if(minC===0) pre=0;
-
     let r = { placa:v.placa, horaE:v.horaEntrada.toLocaleTimeString(), horaS:s.toLocaleTimeString(), fechaISO:s.toISOString().split('T')[0], precio:pre };
     historial.push(r);
     localStorage.setItem("historial", JSON.stringify(historial));
@@ -93,15 +92,40 @@ function darSalida(i) {
 }
 
 function imprimirTicketEntrada(v) {
-    let t = "\n      TORRE GRANADOS\n--------------------------\n     TICKET ENTRADA\n--------------------------\n PLACA: " + v.placa + "\n HORA:  " + v.horaEntrada.toLocaleString() + "\n--------------------------\n";
-    t += "30 MIN GRATIS EN:\n- GUATE PRENDA\n- ALMACEN CHINO\n- TIENDA DE MOTOS\n\n";
-    t += "AVISO IMPORTANTE:\nNo nos hacemos responsables\npor objetos olvidados, ni\nvehiculos mal estacionados.\nTicket extraviado: Q50.00\n";
-    t += "\n\n   ____________________\n       SELLO AQUÍ\n\n\n\n\n";
+    let t = "\n      TORRE GRANADOS\n";
+    t += "--------------------------\n";
+    t += "      TICKET ENTRADA\n";
+    t += "--------------------------\n";
+    t += "          PLACA:\n";
+    t += "         " + v.placa + "\n\n";
+    t += "      FECHA Y HORA:\n";
+    t += "   " + v.horaEntrada.toLocaleString() + "\n";
+    t += "--------------------------\n\n";
+    t += "      30 MIN GRATIS EN:\n";
+    t += "       - GUATE PRENDA\n";
+    t += "       - ALMACEN CHINO\n";
+    t += "      - TIENDA DE MOTOS\n\n"; // Espacio entre clientes
+    t += "      AVISO IMPORTANTE:\n";
+    t += "  No nos hacemos responsables\n";
+    t += "  por objetos olvidados, ni\n";
+    t += "  vehiculos mal estacionados.\n";
+    t += "   Ticket extraviado: Q50.00\n\n"; // Espacio en blanco antes de sello
+    t += "   ____________________\n";
+    t += "        SELLO AQUI\n\n\n\n\n";
     window.location.href = "rawbt:" + encodeURIComponent(t);
 }
 
 function imprimirTicketSalida(h) {
-    let t = "\n      TORRE GRANADOS\n--------------------------\n     TICKET SALIDA\n--------------------------\n PLACA:  " + h.placa + "\n ENTRADA: " + h.horaE + "\n SALIDA:  " + h.horaS + "\n TOTAL:   Q" + h.precio + ".00\n--------------------------\n\n      VUELVA PRONTO\n\n\n\n\n";
+    let t = "\n      TORRE GRANADOS\n";
+    t += "--------------------------\n";
+    t += "      TICKET SALIDA\n";
+    t += "--------------------------\n\n";
+    t += "      PLACA: " + h.placa + "\n";
+    t += "     ENTRADA: " + h.horaE + "\n";
+    t += "     SALIDA:  " + h.horaS + "\n";
+    t += "     TOTAL:   Q" + h.precio + ".00\n\n";
+    t += "--------------------------\n";
+    t += "      VUELVA PRONTO\n\n\n\n\n";
     window.location.href = "rawbt:" + encodeURIComponent(t);
 }
 
@@ -110,7 +134,6 @@ function toggleHistorial() {
     b.style.display = (b.style.display === "none") ? "block" : "none";
     if(b.style.display === "block") {
         let html = "";
-        // Si es Admin, mostrar botones de reporte arriba del historial
         if(usuarioActivo.rol === "ADMIN") {
             html += `<div style="display:flex; gap:5px; margin-bottom:15px;">
                         <button class="ios-btn-report" style="font-size:12px; padding:10px;" onclick="generarReporteHoy()">Hoy</button>
@@ -148,12 +171,32 @@ function reportePorCalendario(fecha) {
 }
 
 function descargarReporte(d, n) {
+    const ahora = new Date();
     const c = document.createElement('canvas'); const x = c.getContext('2d');
-    c.width = 400; c.height = 150 + (d.length * 35);
-    x.fillStyle="white"; x.fillRect(0,0,400,c.height); x.fillStyle="black"; x.font="bold 18px Arial";
-    x.fillText("REPORTE: " + n, 20, 40);
-    x.font="14px Arial"; let y = 80;
-    d.forEach(r => { x.fillText(`${r.placa} | Q${r.precio} | ${r.horaS}`, 20, y); y+=30; });
-    x.font="bold 16px Arial"; x.fillText("TOTAL: Q" + d.reduce((s,v)=>s+v.precio,0), 20, y+20);
+    c.width = 450; c.height = 220 + (d.length * 35);
+    x.fillStyle="white"; x.fillRect(0,0,c.width,c.height); x.fillStyle="black";
+    
+    // Encabezado del reporte
+    x.font="bold 20px Arial"; x.textAlign="center";
+    x.fillText("REPORTE DE VENTAS", 225, 40);
+    
+    x.font="14px Arial"; x.textAlign="left";
+    x.fillText("Fecha Reporte: " + n, 30, 70);
+    x.fillText("Generado por: " + usuarioActivo.user.toUpperCase(), 30, 95);
+    x.fillText("Emitido: " + ahora.toLocaleDateString() + " " + ahora.toLocaleTimeString(), 30, 120);
+    
+    x.beginPath(); x.moveTo(30, 135); x.lineTo(420, 135); x.stroke();
+    
+    let y = 165;
+    d.forEach(r => { 
+        x.font="14px Arial";
+        x.fillText(`${r.placa} | Q${r.precio} | ${r.horaS}`, 30, y); 
+        y+=30; 
+    });
+    
+    x.beginPath(); x.moveTo(30, y-10); x.lineTo(420, y-10); x.stroke();
+    x.font="bold 18px Arial"; 
+    x.fillText("TOTAL GENERAL: Q" + d.reduce((s,v)=>s+v.precio,0) + ".00", 30, y+25);
+    
     const a = document.createElement('a'); a.download=`Reporte_${n}.png`; a.href=c.toDataURL(); a.click();
 }
