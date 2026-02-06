@@ -1,3 +1,4 @@
+// CONFIGURACIÓN USUARIOS
 const usuariosSistemas = [
     {user: "Admin", pass: "2025", rol: "ADMIN"},
     {user: "usuario1", pass: "1111", rol: "OPERADOR"}
@@ -8,24 +9,27 @@ let activos = JSON.parse(localStorage.getItem("activos")) || [];
 activos = activos.map(v => ({ ...v, horaEntrada: new Date(v.horaEntrada) }));
 let historial = JSON.parse(localStorage.getItem("historial")) || [];
 
-// LÓGICA DE TECLADO (ENTER)
+// EVENTOS DE TECLADO (ENTER)
 document.addEventListener("DOMContentLoaded", () => {
     const userInput = document.getElementById("loginUser");
     const passInput = document.getElementById("loginPass");
     const plateInput = document.getElementById("plateInput");
 
-    userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") passInput.focus(); });
-    passInput.addEventListener("keypress", (e) => { if (e.key === "Enter") login(); });
-    plateInput.addEventListener("keypress", (e) => { if (e.key === "Enter") registrarEntrada(); });
+    if(userInput) userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") passInput.focus(); });
+    if(passInput) passInput.addEventListener("keypress", (e) => { if (e.key === "Enter") login(); });
+    if(plateInput) plateInput.addEventListener("keypress", (e) => { if (e.key === "Enter") registrarEntrada(); });
 });
 
-// RELOJ
+// RELOJ VIVO
 setInterval(() => {
     const ahora = new Date();
-    document.getElementById('reloj').innerText = ahora.toLocaleTimeString();
-    document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const r = document.getElementById('reloj');
+    const f = document.getElementById('fecha');
+    if(r) r.innerText = ahora.toLocaleTimeString();
+    if(f) f.innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }, 1000);
 
+// LOGIN
 function login() {
     const u = document.getElementById("loginUser").value;
     const p = document.getElementById("loginPass").value;
@@ -42,10 +46,12 @@ function login() {
     actualizarLista();
 }
 
+// ENTRADAS
 function registrarEntrada() {
     let input = document.getElementById("plateInput");
     let placa = input.value.trim().toUpperCase();
     if(!placa) return;
+    
     let v = { placa, horaEntrada: new Date(), sellos: 0 };
     activos.push(v);
     localStorage.setItem("activos", JSON.stringify(activos));
@@ -62,8 +68,8 @@ function actualizarLista() {
         li.className = "vehiculo-item";
         li.innerHTML = `
             <div class="placa-badge">${v.placa}</div>
-            <div style="font-weight:700;">${v.horaEntrada.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-            <div style="display:flex; gap:5px;">
+            <div style="font-weight:700; font-size:13px;">${v.horaEntrada.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+            <div style="display:flex; gap:8px;">
                 <button class="btn-sello" onclick="agregarSello(${i})">SELLO (${v.sellos})</button>
                 <button class="btn-salida-list" onclick="darSalida(${i})">SALIDA</button>
             </div>`;
@@ -95,6 +101,7 @@ function darSalida(i) {
     actualizarLista();
 }
 
+// TICKETS
 function imprimirTicketEntrada(v) {
     let t = "\n      TORRE GRANADOS      \n--------------------------\n    TICKET DE ENTRADA     \n--------------------------\n\n PLACA: " + v.placa + "\n HORA:  " + v.horaEntrada.toLocaleString() + "\n\n--------------------------\n\n\n\n\n";
     window.location.href = "rawbt:" + encodeURIComponent(t);
@@ -105,6 +112,7 @@ function imprimirTicketSalida(h) {
     window.location.href = "rawbt:" + encodeURIComponent(t);
 }
 
+// REPORTES
 function generarReporteHoy() {
     const hoy = new Date().toISOString().split('T')[0];
     const datos = historial.filter(h => h.fechaISO === hoy);
@@ -115,12 +123,12 @@ function generarReporteHoy() {
 function mostrarCalendario() {
     const dp = document.getElementById("datePicker");
     dp.style.display = "block";
-    dp.showPicker(); // Fuerza la apertura del calendario en móviles
+    dp.showPicker();
 }
 
 function generarReporteFecha(f) {
     const datos = historial.filter(h => h.fechaISO === f);
-    if(datos.length === 0) alert("No hay datos.");
+    if(datos.length === 0) alert("No hay datos para esta fecha.");
     else descargarImagenReporte(datos, f);
     document.getElementById("datePicker").style.display = "none";
 }
@@ -137,7 +145,7 @@ function descargarImagenReporte(datos, nombre) {
     datos.forEach(r => { ctx.fillText(`${r.placa} | Q${r.precio} | ${r.horaS}`, 30, y); y += 35; });
     ctx.font = "bold 20px Arial";
     ctx.fillText("TOTAL: Q" + datos.reduce((s, v) => s + v.precio, 0) + ".00", 30, y + 30);
-    const link = document.createElement('a'); link.download = `Reporte_${nombre}.png`;
+    const link = document.createElement('a'); link.download = `Rep_${nombre}.png`;
     link.href = canvas.toDataURL(); link.click();
 }
 
@@ -145,14 +153,14 @@ function toggleHistorial() {
     const box = document.getElementById("historialBox");
     box.style.display = (box.style.display === "none") ? "block" : "none";
     if(box.style.display === "block") {
-        let html = historial.slice().reverse().map(h => `<div style="font-size:11px; border-bottom:1px solid #eee; padding:5px;"><b>${h.placa}</b> | Q${h.precio} | ${h.horaS}</div>`).join('');
+        let html = historial.slice().reverse().map(h => `<div style="font-size:12px; border-bottom:1px solid #eee; padding:8px;"><b>${h.placa}</b> | Q${h.precio} | ${h.horaS}</div>`).join('');
         if(usuarioActivo.rol === "ADMIN") html += `<button class="ios-btn-danger" onclick="borrarHistorial()">BORRAR TODO EL HISTORIAL</button>`;
         box.innerHTML = html;
     }
 }
 
 function borrarHistorial() {
-    if(confirm("¿Borrar todo el historial?")) {
+    if(confirm("¿Borrar historial?")) {
         historial = [];
         localStorage.setItem("historial", JSON.stringify(historial));
         toggleHistorial();
