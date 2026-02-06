@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Parqueo TORRE GRANADOS</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -15,7 +15,7 @@
             <div class="input-container">
                 <div class="input-field">
                     <label>Usuario</label>
-                    <input type="text" id="loginUser" placeholder="Usuario">
+                    <input type="text" id="loginUser" placeholder="Usuario" autocomplete="off">
                 </div>
                 <div class="input-field">
                     <label>Contraseña</label>
@@ -39,7 +39,7 @@
 
         <div class="card center-content">
             <h2 class="title-ios-sub">INGRESAR VEHÍCULO</h2>
-            <input type="text" id="plateInput" class="input-plate" placeholder="PLACA">
+            <input type="text" id="plateInput" class="input-plate" placeholder="PLACA" autocomplete="off">
             <button class="ios-btn btn-large" style="margin-top: 20px;" onclick="registrarEntrada()">REGISTRAR ENTRADA</button>
         </div>
 
@@ -55,7 +55,7 @@
                 <button class="ios-btn-alt" onclick="mostrarCalendario()">Buscar Fecha</button>
             </div>
             
-            <input type="date" id="datePicker" style="display:none; margin-top:15px; width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;" onchange="generarReporteFecha(this.value)">
+            <input type="date" id="datePicker" style="display:none; margin-top:15px; width:100%; padding:12px; border-radius:10px; border:1px solid #d1d1d6; font-size:16px;" onchange="generarReporteFecha(this.value)">
 
             <button class="ios-btn-alt btn-med" style="width:100%; margin-top:10px; background:#8e8e93;" onclick="toggleHistorial()">Ver Historial en Pantalla</button>
             
