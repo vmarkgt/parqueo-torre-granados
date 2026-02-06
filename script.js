@@ -11,7 +11,7 @@ const usuariosSistemas = [
 let usuarioActivo = null;
 
 // ==========================================
-// CARGA DE DATOS (LocalStorage)
+// CARGA DE DATOS
 // ==========================================
 let activos = JSON.parse(localStorage.getItem("activos")) || [];
 activos = activos.map(v => ({
@@ -22,7 +22,7 @@ activos = activos.map(v => ({
 let historial = JSON.parse(localStorage.getItem("historial")) || [];
 
 // ==========================================
-// RELOJ Y FECHA EN VIVO
+// RELOJ EN VIVO
 // ==========================================
 setInterval(() => {
     const relojCont = document.getElementById('reloj');
@@ -37,7 +37,7 @@ setInterval(() => {
 }, 1000);
 
 // ==========================================
-// LÓGICA DE SESIÓN (LOGIN)
+// LOGIN
 // ==========================================
 function login(){
     let u = document.getElementById("loginUser").value;
@@ -83,7 +83,7 @@ function agregarSello(index){
 
     if(descuentoSellos >= minutosTotales) {
         darSalida(index);
-        alert("Cubierto por sello. Salida automática procesada.");
+        alert("Cubierto por sello. Salida automática.");
     } else {
         localStorage.setItem("activos", JSON.stringify(activos));
         actualizarLista();
@@ -115,7 +115,6 @@ function darSalida(index){
 
     historial.push(registro);
     imprimirTicketSalida(registro);
-    
     activos.splice(index, 1);
     localStorage.setItem("activos", JSON.stringify(activos));
     localStorage.setItem("historial", JSON.stringify(historial));
@@ -159,7 +158,6 @@ function renderizarHistorial(){
                 <small>E: ${h.horaE} - S: ${h.horaS} (${h.fecha})</small>
             </div>
         `).join('');
-        
         if(usuarioActivo.rol === "ADMIN") {
             listaHTML += `<button class="ios-btn-danger" style="width:100%; margin-top:10px;" onclick="borrarHistorialDefinitivo()">BORRAR TODO EL HISTORIAL</button>`;
         }
@@ -179,80 +177,72 @@ function borrarHistorialDefinitivo(){
 }
 
 // ==========================================
-// IMPRESIÓN POR IMAGEN (PARA TAMAÑO GIGANTE)
+// IMPRESIÓN CORREGIDA (PARA EVITAR SÍMBOLOS)
 // ==========================================
 
 function imprimirTicketEntrada(v) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = 380; canvas.height = 420;
+    canvas.width = 384; canvas.height = 420; // Ancho exacto POS 58mm
     ctx.fillStyle = "white"; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "black"; ctx.textAlign = "center";
 
-    ctx.font = "bold 35px Arial"; ctx.fillText("TORRE GRANADOS", 190, 50);
-    ctx.font = "24px Arial"; ctx.fillText("TICKET DE ENTRADA", 190, 90);
-    ctx.fillText("---------------------------------", 190, 115);
-
-    // PLACA GIGANTE
-    ctx.font = "bold 100px Arial"; ctx.fillText(v.placa, 190, 215);
-
-    ctx.font = "24px Arial"; ctx.fillText("---------------------------------", 190, 260);
+    ctx.font = "bold 32px Arial"; ctx.fillText("TORRE GRANADOS", 192, 50);
+    ctx.font = "20px Arial"; ctx.fillText("TICKET DE ENTRADA", 192, 90);
+    ctx.fillText("---------------------------------", 192, 115);
+    ctx.font = "bold 100px Arial"; ctx.fillText(v.placa, 192, 215);
+    ctx.font = "20px Arial"; ctx.fillText("---------------------------------", 192, 260);
     ctx.textAlign = "left";
-    ctx.fillText("FECHA: " + v.horaEntrada.toLocaleDateString(), 30, 305);
-    ctx.fillText("HORA:  " + v.horaEntrada.toLocaleTimeString(), 30, 345);
-    
+    ctx.fillText("FECHA: " + v.horaEntrada.toLocaleDateString(), 30, 310);
+    ctx.fillText("HORA:  " + v.horaEntrada.toLocaleTimeString(), 30, 350);
     ctx.textAlign = "center";
-    ctx.font = "bold 22px Arial"; ctx.fillText("CONSERVE SU TICKET", 190, 395);
+    ctx.font = "bold 20px Arial"; ctx.fillText("CONSERVE SU TICKET", 192, 400);
 
+    // Método de envío alternativo para evitar símbolos raros
     const dataUrl = canvas.toDataURL("image/png");
-    window.location.href = "rawbt:image/png;base64," + dataUrl.split(',')[1];
+    window.location.href = "rawbt:(img)" + dataUrl;
 }
 
 function imprimirTicketSalida(h) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = 380; canvas.height = 480;
+    canvas.width = 384; canvas.height = 480;
     ctx.fillStyle = "white"; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "black"; ctx.textAlign = "center";
 
-    ctx.font = "bold 35px Arial"; ctx.fillText("TORRE GRANADOS", 190, 50);
-    ctx.font = "26px Arial"; ctx.fillText("PAGO RECIBIDO", 190, 95);
-
-    // MONTO GIGANTE
-    ctx.font = "bold 90px Arial"; ctx.fillText("Q" + h.precio + ".00", 190, 185);
-    ctx.font = "bold 40px Arial"; ctx.fillText("PLACA: " + h.placa, 190, 255);
-
-    ctx.textAlign = "left"; ctx.font = "22px Arial";
+    ctx.font = "bold 32px Arial"; ctx.fillText("TORRE GRANADOS", 192, 50);
+    ctx.font = "24px Arial"; ctx.fillText("PAGO RECIBIDO", 192, 95);
+    ctx.font = "bold 90px Arial"; ctx.fillText("Q" + h.precio + ".00", 192, 185);
+    ctx.font = "bold 36px Arial"; ctx.fillText("PLACA: " + h.placa, 192, 255);
+    ctx.textAlign = "left"; ctx.font = "20px Arial";
     ctx.fillText("ENTRADA:  " + h.horaE, 40, 315);
     ctx.fillText("SALIDA:   " + h.horaS, 40, 355);
     ctx.fillText("OPERADOR: " + h.operador, 40, 395);
-    
-    ctx.textAlign = "center"; ctx.font = "bold 24px Arial";
-    ctx.fillText("¡GRACIAS POR SU VISITA!", 190, 450);
+    ctx.textAlign = "center"; ctx.font = "bold 22px Arial";
+    ctx.fillText("¡GRACIAS POR SU VISITA!", 192, 450);
 
     const dataUrl = canvas.toDataURL("image/png");
-    window.location.href = "rawbt:image/png;base64," + dataUrl.split(',')[1];
+    window.location.href = "rawbt:(img)" + dataUrl;
 }
 
 // ==========================================
-// REPORTE VISUAL (SIN IMPRIMIR - COMPARTIR)
+// REPORTE: DESCARGA DIRECTA COMO IMAGEN
 // ==========================================
 
-async function generarReporteHTML() {
+function generarReporteHTML() {
     if(historial.length === 0) return alert("No hay registros hoy.");
     let total = historial.reduce((s, x) => s + x.precio, 0);
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = 450;
+    canvas.width = 500;
     canvas.height = 250 + (historial.length * 45);
 
     ctx.fillStyle = "white"; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "black"; ctx.textAlign = "center";
-
-    ctx.font = "bold 34px Arial"; ctx.fillText("REPORTE DE VENTAS", 225, 60);
-    ctx.font = "22px Arial"; ctx.fillText("TORRE GRANADOS", 225, 100);
-    ctx.fillText("-------------------------------------------", 225, 130);
+    ctx.font = "bold 34px Arial"; ctx.fillText("REPORTE DE VENTAS", 250, 60);
+    ctx.font = "22px Arial"; ctx.fillText("TORRE GRANADOS", 250, 100);
+    ctx.fillText("-------------------------------------------", 250, 130);
 
     ctx.textAlign = "left";
     let y = 180;
@@ -264,24 +254,12 @@ async function generarReporteHTML() {
 
     ctx.textAlign = "center";
     ctx.font = "bold 34px Arial";
-    ctx.fillText("TOTAL: Q" + total + ".00", 225, y + 60);
+    ctx.fillText("TOTAL: Q" + total + ".00", 250, y + 60);
 
-    canvas.toBlob(async (blob) => {
-        const file = new File([blob], `Reporte_${new Date().toLocaleDateString()}.png`, { type: "image/png" });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
-                await navigator.share({
-                    files: [file],
-                    title: 'Reporte de Ventas',
-                    text: 'Resumen de ventas de hoy.'
-                });
-            } catch (err) { console.error("Error al compartir", err); }
-        } else {
-            const link = document.createElement('a');
-            link.download = 'Reporte_Ventas.png';
-            link.href = canvas.toDataURL();
-            link.click();
-            alert("Reporte guardado en descargas.");
-        }
-    });
+    // DESCARGA DIRECTA
+    const link = document.createElement('a');
+    link.download = `Reporte_${new Date().toLocaleDateString().replace(/\//g,'-')}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    alert("Reporte descargado en la galería/descargas.");
 }
