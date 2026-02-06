@@ -27,41 +27,33 @@
     </div>
 
     <div id="appCard" class="app-container" style="display:none;">
-        
         <div class="reloj-viva">
             <div id="reloj">00:00:00</div>
             <div id="fecha">-- de -- de ----</div>
         </div>
-
         <div class="header-logo-container">
             <img class="logo-app-main" src="./logotorre.png" alt="Logo">
         </div>
-
         <div class="card center-content">
             <h2 class="title-ios-sub">INGRESAR VEHÍCULO</h2>
             <input type="text" id="plateInput" class="input-plate" placeholder="PLACA" style="text-transform: uppercase;">
             <button class="ios-btn btn-large" style="margin-top: 20px;" onclick="registrarEntrada()">REGISTRAR ENTRADA</button>
         </div>
-
         <div class="card">
             <h2 class="title-ios-green">Vehículos en Parqueo</h2>
             <ul id="activeList" style="list-style: none; padding: 0;"></ul>
         </div>
-
         <div class="card center-content">
             <div class="button-row">
                 <button class="ios-btn-alt btn-med" onclick="toggleHistorial()">Ver Historial</button>
             </div>
             <input type="date" id="datePicker" style="display:none; width:100%; margin-top:10px; padding:10px;" onchange="reportePorCalendario(this.value)">
-            
             <div id="historialBox" class="historial-container" style="display:none;"></div>
         </div>
-
         <div class="footer-user-fixed">
             <div id="userDisplay"></div>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
