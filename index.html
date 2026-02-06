@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistema Torre Granados</title>
+    <title>Torre Granados POS</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -38,13 +38,13 @@
             <div class="section-title"><h3>Vehículos en Parqueo</h3></div>
             <ul id="activeList" class="vehiculos-lista"></ul>
 
-            <div class="section-title"><h3>Gestión de Reportes</h3></div>
+            <div class="section-title"><h3>Reportes</h3></div>
             <div class="report-grid">
-                <button class="btn-report-day" onclick="generarReporteHoy()">📦 REPORTE HOY</button>
-                <button class="btn-report-search" onclick="generarReporteFecha()">🔍 BUSCAR FECHA</button>
+                <button class="btn-report-day" onclick="generarReporteHoy()">📦 HOY</button>
+                <button class="btn-report-search" onclick="generarReporteFecha()">🔍 FECHA</button>
             </div>
 
-            <button class="btn-history-toggle" onclick="toggleHistorial()">📂 HISTORIAL EN PANTALLA</button>
+            <button class="btn-history-toggle" onclick="toggleHistorial()">📂 VER HISTORIAL</button>
             <div id="historialBox" class="historial-container" style="display:none;"></div>
         </div>
     </div>
