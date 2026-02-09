@@ -51,7 +51,7 @@ function registrarEntrada() {
     actualizarLista();
 }
 
-// BAÑO (Solo reporte, no ticket)
+// BAÑO
 function registrarBaño() {
     let s = new Date();
     let r = { 
@@ -115,7 +115,7 @@ function darSalida(i) {
         horaS: s.toLocaleTimeString(), 
         fechaISO: s.toISOString().split('T')[0], 
         precio: preCobro,
-        precioEmpresa: (preCobro === 0 && v.sellos > 0) ? precioReal : 0,
+        precioSello: (preCobro === 0 && v.sellos > 0) ? precioReal : 0,
         sellosUsados: v.sellos,
         tipo: "VEHICULO"
     };
@@ -140,8 +140,8 @@ function imprimirTicketEntrada(v) {
 function imprimirTicketSalida(h, pReal) {
     let t = "\n      TORRE GRANADOS\n--------------------------\n      TICKET SALIDA\n--------------------------\n\n      PLACA: " + h.placa + "\n     ENTRADA: " + h.horaE + "\n     SALIDA:  " + h.horaS + "\n";
     if(h.precio === 0) {
-        t += "     TOTAL: Q0.00 (Q" + pReal + ".00)\n";
-        t += "     TICKET DESCUENTO APL.\n";
+        t += "     TOTAL: Q0.00 (Sello Q" + pReal + ".00)\n";
+        t += "     TICKET CON SELLO APLIC.\n";
     } else {
         t += "     TOTAL: Q" + h.precio + ".00\n";
     }
@@ -159,7 +159,10 @@ function toggleHistorial() {
                         <button class="ios-btn-report" style="flex:1; font-size:12px;" onclick="generarReporteHoy()">Reporte</button>
                         <button class="ios-btn-danger" style="flex:1; font-size:12px; margin:0;" onclick="borrarHistorial()">Borrar Turno</button>
                      </div>`;
-        html += lista.slice().reverse().map(h => `<div style="font-size:11px; border-bottom:1px solid #eee; padding:5px;">${h.placa} | Q${h.precio} ${h.precioEmpresa > 0 ? '(Tick)' : ''} | ${h.horaS}</div>`).join('');
+        html += lista.slice().reverse().map(h => {
+            let desc = h.tipo === "SERVICIO" ? "BAÑO" : h.placa;
+            return `<div style="font-size:11px; border-bottom:1px solid #eee; padding:5px;">${desc} | Q${h.precio} ${h.precioSello > 0 ? '(Sello)' : ''} | ${h.horaS}</div>`;
+        }).join('');
         b.innerHTML = html;
     }
 }
@@ -191,7 +194,7 @@ function descargarReporte(d, n) {
 
     const c = document.createElement('canvas'); const x = c.getContext('2d');
     c.width = 450; 
-    c.height = 380 + (d.length * 30);
+    c.height = 420 + (d.length * 30);
     x.fillStyle="white"; x.fillRect(0,0,c.width,c.height); x.fillStyle="black";
     
     x.font="bold 20px Arial"; x.textAlign="center";
@@ -205,8 +208,8 @@ function descargarReporte(d, n) {
     let y = 170;
     vehiculos.forEach(r => {
         x.font="12px Arial";
-        let txt = `${r.placa} | EFECT: Q${r.precio}`;
-        if(r.precioEmpresa > 0) txt += ` | EMPRESA: (Q${r.precioEmpresa})`;
+        let txt = `${r.placa} | Efectivo Q${r.precio}`;
+        if(r.precioSello > 0) txt += ` (Sello Q${r.precioSello})`;
         x.fillText(txt, 30, y);
         y += 25;
     });
@@ -224,16 +227,20 @@ function descargarReporte(d, n) {
     x.beginPath(); x.moveTo(30, y); x.lineTo(420, y); x.stroke();
     y += 30;
     x.font="bold 15px Arial";
-    let totalEfectivo = d.reduce((s, v) => s + v.precio, 0);
-    let totalEmpresa = d.reduce((s, v) => s + (v.precioEmpresa || 0), 0);
     
-    x.fillText("TOTAL CAJA (Efectivo): Q" + totalEfectivo + ".00", 30, y);
+    let totalEfectivoVehiculos = vehiculos.reduce((s, v) => s + v.precio, 0);
+    let totalEfectivoBaños = baños.reduce((s, b) => s + b.precio, 0);
+    let totalSelloMonto = vehiculos.reduce((s, v) => s + (v.precioSello || 0), 0);
+    let totalSelloCant = vehiculos.filter(v => v.precioSello > 0).length;
+    
+    x.fillText("TOTAL EFECTIVO VEHÍCULOS: Q" + totalEfectivoVehiculos + ".00", 30, y);
     y += 25;
-    x.fillText("TOTAL EMPRESA (Tickets): Q" + totalEmpresa + ".00", 30, y);
+    x.fillText("TOTAL SELLOS (" + totalSelloCant + "): Q" + totalSelloMonto + ".00", 30, y);
     y += 25;
-    x.fillText("CANTIDAD VEHÍCULOS: " + vehiculos.length, 30, y);
+    x.fillText("TOTAL BAÑOS (" + baños.length + "): Q" + totalEfectivoBaños + ".00", 30, y);
     y += 25;
-    x.fillText("CANTIDAD BAÑOS: " + baños.length, 30, y);
+    x.font="bold 17px Arial";
+    x.fillText("TOTAL GENERAL CAJA: Q" + (totalEfectivoVehiculos + totalEfectivoBaños) + ".00", 30, y);
 
     const a = document.createElement('a'); a.download=`Reporte_${n}.png`; a.href=c.toDataURL(); a.click();
 }
