@@ -194,7 +194,7 @@ function descargarReporte(d, n) {
 
     const c = document.createElement('canvas'); const x = c.getContext('2d');
     c.width = 450; 
-    c.height = 420 + (d.length * 30);
+    c.height = 400 + (d.length * 30);
     x.fillStyle="white"; x.fillRect(0,0,c.width,c.height); x.fillStyle="black";
     
     x.font="bold 20px Arial"; x.textAlign="center";
@@ -225,7 +225,7 @@ function descargarReporte(d, n) {
 
     y += 30;
     x.beginPath(); x.moveTo(30, y); x.lineTo(420, y); x.stroke();
-    y += 30;
+    y += 35;
     x.font="bold 15px Arial";
     
     let totalEfectivoVehiculos = vehiculos.reduce((s, v) => s + v.precio, 0);
@@ -233,14 +233,12 @@ function descargarReporte(d, n) {
     let totalSelloMonto = vehiculos.reduce((s, v) => s + (v.precioSello || 0), 0);
     let totalSelloCant = vehiculos.filter(v => v.precioSello > 0).length;
     
-    x.fillText("TOTAL EFECTIVO VEHÍCULOS: Q" + totalEfectivoVehiculos + ".00", 30, y);
+    x.fillText("EFECTIVO VEHÍCULOS: Q" + totalEfectivoVehiculos + ".00", 30, y);
     y += 25;
-    x.fillText("TOTAL SELLOS (" + totalSelloCant + "): Q" + totalSelloMonto + ".00", 30, y);
-    y += 25;
-    x.fillText("TOTAL BAÑOS (" + baños.length + "): Q" + totalEfectivoBaños + ".00", 30, y);
-    y += 25;
-    x.font="bold 17px Arial";
-    x.fillText("TOTAL GENERAL CAJA: Q" + (totalEfectivoVehiculos + totalEfectivoBaños) + ".00", 30, y);
-
+    x.fillText("EFECTIVO BAÑOS (" + baños.length + "): Q" + totalEfectivoBaños + ".00", 30, y);
+    y += 35;
+    x.fillStyle = "blue"; // Color diferente para los sellos ya que es dinero externo
+    x.fillText("POR COBRAR SELLOS (" + totalSelloCant + "): Q" + totalSelloMonto + ".00", 30, y);
+    
     const a = document.createElement('a'); a.download=`Reporte_${n}.png`; a.href=c.toDataURL(); a.click();
 }
