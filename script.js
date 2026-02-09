@@ -3,7 +3,7 @@
 // ==========================================
 const usuariosSistemas = [
     {user: "Admin", pass: "2025", rol: "ADMIN"},
-    {user: "usuario1", pass: "1111", rol: "OPERADOR"}
+    {user: "Parqueo", pass: "1111", rol: "OPERADOR"}
 ];
 
 let usuarioActivo = null;
