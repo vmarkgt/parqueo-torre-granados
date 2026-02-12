@@ -38,7 +38,6 @@ function login() {
     actualizarLista();
 }
 
-// INGRESO
 function registrarEntrada() {
     let input = document.getElementById("plateInput");
     let placa = input.value.trim().toUpperCase();
@@ -51,7 +50,6 @@ function registrarEntrada() {
     actualizarLista();
 }
 
-// BAÑO
 function registrarBaño() {
     let s = new Date();
     let r = { 
@@ -102,20 +100,29 @@ function agregarSello(i) {
 function darSalida(i) {
     let v = activos[i]; 
     let s = new Date();
-    let minT = Math.ceil((s - v.horaEntrada) / 60000);
-    let minC = Math.max(0, minT - (v.sellos * 30));
+    let minTotales = Math.ceil((s - v.horaEntrada) / 60000);
     
-    let precioReal = (v.placa[0] === "M") ? (minT <= 30 ? 3 : 6) : (minT <= 30 ? 5 : 10);
-    let preCobro = (v.placa[0] === "M") ? (minC <= 30 ? 3 : 6) : (minC <= 30 ? 5 : 10);
-    if(minC === 0) preCobro = 0;
+    // Cada sello descuenta 30 min del tiempo total
+    let minEfectivos = Math.max(0, minTotales - (v.sellos * 30));
+
+    // LÓGICA DE COBRO: Q5 (Carro) o Q3 (Moto) por cada bloque de 30 min o fracción
+    const calcularMonto = (minutos, tarifaBase) => {
+        if (minutos <= 0) return 0;
+        return Math.ceil(minutos / 30) * tarifaBase;
+    };
+
+    let tarifaBase = (v.placa.startsWith("M")) ? 3 : 5; 
+    
+    let montoACobrar = calcularMonto(minEfectivos, tarifaBase);
+    let montoRealSinSello = calcularMonto(minTotales, tarifaBase);
 
     let r = { 
         placa: v.placa, 
         horaE: v.horaEntrada.toLocaleTimeString(), 
         horaS: s.toLocaleTimeString(), 
         fechaISO: s.toISOString().split('T')[0], 
-        precio: preCobro,
-        precioSello: (preCobro === 0 && v.sellos > 0) ? precioReal : 0,
+        precio: montoACobrar,
+        precioSello: (montoACobrar < montoRealSinSello) ? (montoRealSinSello - montoACobrar) : 0,
         sellosUsados: v.sellos,
         tipo: "VEHICULO"
     };
@@ -125,31 +132,30 @@ function darSalida(i) {
     localStorage.setItem("historial", JSON.stringify(historialGlobal));
     localStorage.setItem("historialLocal", JSON.stringify(historialLocal));
     
-    imprimirTicketSalida(r, precioReal);
+    imprimirTicketSalida(r, (montoACobrar === 0 && v.sellos > 0) ? montoRealSinSello : montoACobrar);
     activos.splice(i, 1);
     localStorage.setItem("activos", JSON.stringify(activos));
     actualizarLista();
 }
 
-// IMPRESIÓN
 function imprimirTicketEntrada(v) {
     let t = "\n      TORRE GRANADOS\n--------------------------\n      TICKET ENTRADA\n--------------------------\n          PLACA:\n         " + v.placa + "\n\n      FECHA Y HORA:\n   " + v.horaEntrada.toLocaleString() + "\n--------------------------\n\n      30 MIN GRATIS EN:\n       - GUATE PRENDA\n       - ALMACEN CHINO\n      - TIENDA DE MOTOS\n--------------------------\n      AVISO IMPORTANTE:\n  No nos hacemos responsables\n  por objetos olvidados, ni\n  vehiculos mal estacionados.\n\n--------------------------\n   Ticket extraviado: Q50.00\n--------------------------\n\n\n\n\n   --------------------\n        SELLO AQUI\n\n\n\n\n";
     window.location.href = "rawbt:" + encodeURIComponent(t);
 }
 
-function imprimirTicketSalida(h, pReal) {
+function imprimirTicketSalida(h, valorAMostrar) {
     let t = "\n      TORRE GRANADOS\n--------------------------\n      TICKET SALIDA\n--------------------------\n\n      PLACA: " + h.placa + "\n     ENTRADA: " + h.horaE + "\n     SALIDA:  " + h.horaS + "\n";
     if(h.precio === 0) {
-        t += "     TOTAL: Q0.00 (Sello Q" + pReal + ".00)\n";
+        t += "     TOTAL: Q0.00 (Sello Q" + valorAMostrar + ".00)\n";
         t += "     TICKET CON SELLO APLIC.\n";
     } else {
         t += "     TOTAL: Q" + h.precio + ".00\n";
+        if(h.precioSello > 0) t += "     (Ahorro Sello: Q" + h.precioSello + ".00)\n";
     }
     t += "\n--------------------------\n      VUELVA PRONTO\n\n\n\n\n";
     window.location.href = "rawbt:" + encodeURIComponent(t);
 }
 
-// HISTORIAL Y REPORTES
 function toggleHistorial() {
     let b = document.getElementById("historialBox");
     b.style.display = (b.style.display === "none") ? "block" : "none";
@@ -237,7 +243,7 @@ function descargarReporte(d, n) {
     y += 25;
     x.fillText("EFECTIVO BAÑOS (" + baños.length + "): Q" + totalEfectivoBaños + ".00", 30, y);
     y += 35;
-    x.fillStyle = "blue"; // Color diferente para los sellos ya que es dinero externo
+    x.fillStyle = "blue";
     x.fillText("POR COBRAR SELLOS (" + totalSelloCant + "): Q" + totalSelloMonto + ".00", 30, y);
     
     const a = document.createElement('a'); a.download=`Reporte_${n}.png`; a.href=c.toDataURL(); a.click();
